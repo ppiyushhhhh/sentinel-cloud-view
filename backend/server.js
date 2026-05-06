@@ -569,6 +569,76 @@ Please check your EC2 server and CloudOps dashboard.
   });
 }
 
+
+const ALERT_STATE_FILE = path.join(REPORT_DIR, "alert-state.json");
+const ALERT_COOLDOWN_MINUTES = 60;
+
+function readAlertState() {
+  try {
+    if (!fs.existsSync(ALERT_STATE_FILE)) {
+      return {};
+    }
+
+    return JSON.parse(fs.readFileSync(ALERT_STATE_FILE, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function writeAlertState(state) {
+  fs.writeFileSync(ALERT_STATE_FILE, JSON.stringify(state, null, 2));
+}
+
+function shouldSendAlert(alertType, force = false) {
+  if (force) {
+    return true;
+  }
+
+  const state = readAlertState();
+  const current = state[alertType];
+
+  if (!current || current.status !== "active") {
+    return true;
+  }
+
+  const lastSentAt = new Date(current.lastSentAt).getTime();
+  const now = Date.now();
+  const diffMinutes = (now - lastSentAt) / 1000 / 60;
+
+  return diffMinutes >= ALERT_COOLDOWN_MINUTES;
+}
+
+function markAlertActive(alertType, message) {
+  const state = readAlertState();
+
+  state[alertType] = {
+    status: "active",
+    message,
+    lastSentAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  writeAlertState(state);
+}
+
+function markAlertResolved(alertType) {
+  const state = readAlertState();
+
+  state[alertType] = {
+    ...(state[alertType] || {}),
+    status: "resolved",
+    resolvedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  writeAlertState(state);
+}
+
+function isAlertActive(alertType) {
+  const state = readAlertState();
+  return state[alertType]?.status === "active";
+}
+
 /* =========================
    ROUTES
 ========================= */
@@ -751,12 +821,24 @@ app.get("/api/reports/:fileName", (req, res) => {
   res.download(filePath);
 });
 
+
 app.get("/api/send-alert", async (req, res) => {
   try {
-    const alertType = req.query.type || "general";
-    const message = req.query.message || "CloudOps Sentinel alert triggered.";
+    const alertType = String(req.query.type || "general");
+    const message = String(req.query.message || "CloudOps Sentinel alert triggered.");
+    const force = String(req.query.force || "false") === "true";
+
+    if (!shouldSendAlert(alertType, force)) {
+      return res.json({
+        message: "Duplicate alert suppressed",
+        alertType,
+        alertMessage: message,
+        cooldownMinutes: ALERT_COOLDOWN_MINUTES
+      });
+    }
 
     await sendAlertEmail(alertType, message);
+    markAlertActive(alertType, message);
 
     res.json({
       message: "Alert email sent successfully",
@@ -770,6 +852,37 @@ app.get("/api/send-alert", async (req, res) => {
     });
   }
 });
+
+app.get("/api/resolve-alert", async (req, res) => {
+  try {
+    const alertType = String(req.query.type || "general");
+    const message = String(
+      req.query.message || `CloudOps Sentinel alert resolved: ${alertType}`
+    );
+
+    if (!isAlertActive(alertType)) {
+      return res.json({
+        message: "No active alert to resolve",
+        alertType
+      });
+    }
+
+    await sendAlertEmail(`resolved-${alertType}`, message);
+    markAlertResolved(alertType);
+
+    res.json({
+      message: "Resolved alert email sent successfully",
+      alertType,
+      alertMessage: message
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to resolve alert",
+      error: error.message
+    });
+  }
+});
+
 
 app.get("/api/alerts-history", (req, res) => {
   const alertLogPath = path.join(REPORT_DIR, "alert.log");
