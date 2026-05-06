@@ -1,329 +1,324 @@
 # CloudOps Sentinel
 
-## Production-Ready Cloud Monitoring, DevSecOps, CI/CD, Docker, and Automated Reporting System
+[![GitHub Stars](https://img.shields.io/badge/⭐-Stars-blue?style=flat-square)](https://github.com/ppiyushhhhh/sentinel-cloud-view)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](#license)
+[![Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)](#current-project-status)
+[![Node.js](https://img.shields.io/badge/Node.js-v18+-brightgreen?style=flat-square)](#tech-stack)
+[![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square)](#tech-stack)
 
-CloudOps Sentinel is a full-stack DevOps monitoring and automation project deployed on an AWS EC2 instance. The project is designed to monitor real server health, Docker containers, Trivy security scan results, automated PDF infrastructure reports, email alerts, and CI/CD deployment status from a single dashboard.
+> **Production-Ready Cloud Monitoring, DevSecOps, CI/CD, Docker, and Automated Reporting System**
 
-This project demonstrates practical hands-on implementation of cloud infrastructure monitoring, backend API development, Docker-based deployment, security scanning, Nginx reverse proxy configuration, automated reporting, alerting, and GitHub Actions CI/CD on a Linux server.
+CloudOps Sentinel is a full-stack DevOps monitoring and automation project deployed on AWS EC2. It provides real-time monitoring of server health, Docker containers, security vulnerabilities via Trivy, automated PDF reporting, email alerting, and GitHub Actions CI/CD deployment.
 
----
+🔗 **Live Demo:** [http://3.110.173.200](http://3.110.173.200)
 
-## Project Objective
+## 📋 Table of Contents
 
-The main objective of this project is to build a real-world DevOps monitoring dashboard that can:
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Architecture](#project-architecture)
+- [Live Application](#live-application)
+- [Getting Started](#getting-started)
+- [API Documentation](#api-documentation)
+- [Configuration](#configuration)
+- [Security](#security)
+- [Challenges & Solutions](#challenges--solutions)
+- [Project Status](#current-project-status)
+- [Future Improvements](#future-improvements)
+- [Author](#author)
 
-- Monitor live EC2 server health
-- Track CPU, memory, disk usage, uptime, and IP details
-- Display Docker container status
-- Scan Docker images using Trivy
-- Generate professional PDF infrastructure reports
-- Send reports automatically through email
-- Trigger email alerts when server conditions cross defined thresholds
-- Deploy changes automatically using GitHub Actions CI/CD
-- Serve the frontend through Nginx reverse proxy
-- Keep backend APIs secured behind the `/api` route
+## 📖 Overview
 
----
+CloudOps Sentinel demonstrates practical hands-on implementation of:
+- ☁️ Cloud infrastructure monitoring
+- 🔐 Security scanning and DevSecOps
+- 🐳 Docker container management
+- 📊 Automated PDF reporting
+- 📧 Email alerting system
+- 🚀 GitHub Actions CI/CD pipeline
+- 🔄 Nginx reverse proxy setup
+- ⚙️ Cron job automation
 
-## Live Application
+## ✨ Features
 
-| Service | URL |
+### 1. 🖥️ Live Server Health Monitoring
+Real-time EC2 instance metrics including:
+- Server status and hostname
+- Public/Private IP addresses
+- CPU, Memory, Disk usage
+- Server uptime and Nginx status
+- Last checked timestamp
+
+**Endpoint:** `GET /api/server-health`
+
+### 2. 🐳 Docker Container Monitoring
+Live Docker container tracking:
+- Container names and images
+- Container status (running/stopped)
+- Exposed ports
+- Real-time updates
+
+**Endpoint:** `GET /api/docker-containers`
+
+### 3. 🔍 Trivy Security Scanning
+Vulnerability scanning for Docker images:
+- Critical, High, Medium, Low severity levels
+- Total vulnerability count
+- Cached results for performance
+- Scanned images: frontend and backend
+
+**Endpoint:** `GET /api/trivy-summary`
+
+### 4. 📄 Professional PDF Reports
+Comprehensive infrastructure reports including:
+- Executive summary
+- Overall health score
+- Resource utilization metrics
+- Container status overview
+- Vulnerability summary
+- Operational recommendations
+- Report timestamp
+
+**Endpoints:** `GET /api/generate-report` | `GET /api/reports`
+
+### 5. 📧 Automated Email Alerts
+Smart alerting system with configurable thresholds:
+
+| Alert Type | Threshold |
 |---|---|
-| CloudOps Sentinel Dashboard | `http://3.110.173.200` |
-| Server Health API | `http://3.110.173.200/api/server-health` |
-| Docker Containers API | `http://3.110.173.200/api/docker-containers` |
-| Trivy Summary API | `http://3.110.173.200/api/trivy-summary` |
-| PDF Reports API | `http://3.110.173.200/api/reports` |
-| Alerts History API | `http://3.110.173.200/api/alerts-history` |
+| Disk Usage | ≥ 60% |
+| Memory Usage | ≥ 80% |
+| CPU Usage | ≥ 80% |
+| Backend API | Down/Unavailable |
+| Frontend Site | Down/Unavailable |
+| Docker Containers | Stopped Detected |
 
-> Domain and SSL will be added later. Currently, the application is served through the EC2 public IP using Nginx.
+**Endpoints:** `GET /api/send-alert` | `GET /api/alerts-history`
 
----
+### 6. 🚀 CI/CD Pipeline
+Automated deployment via GitHub Actions:
+1. Push to main branch
+2. GitHub Actions starts
+3. SSH into EC2
+4. Pull latest code
+5. Install dependencies & build frontend
+6. Copy build to Nginx root
+7. Restart backend via PM2
+8. Restart Nginx
 
-## Tech Stack
+**Workflow:** `.github/workflows/deploy.yml`
+
+### 7. 📊 Automated Daily Reports
+Scheduled email reports:
+- 7:00 AM daily
+- 7:00 PM daily
+- PDF attachment included
+- Cron-based automation
+
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React, Vite, TypeScript, Tailwind CSS |
-| Backend | Node.js, Express.js |
-| Process Manager | PM2 |
-| Web Server | Nginx |
-| Cloud Platform | AWS EC2 |
-| Operating System | Ubuntu Linux |
-| Containerization | Docker, Docker Compose |
-| Security Scanning | Trivy |
-| Reporting | PDFKit |
-| Email Service | Nodemailer with Gmail App Password |
-| Automation | Cron Jobs |
-| CI/CD | GitHub Actions |
-| Version Control | Git, GitHub |
+| **Frontend** | React, Vite, TypeScript, Tailwind CSS |
+| **Backend** | Node.js, Express.js |
+| **Process Manager** | PM2 |
+| **Web Server** | Nginx |
+| **Cloud Platform** | AWS EC2 |
+| **OS** | Ubuntu Linux |
+| **Containerization** | Docker, Docker Compose |
+| **Security Scanning** | Trivy |
+| **Reporting** | PDFKit |
+| **Email Service** | Nodemailer + Gmail App Password |
+| **Automation** | Cron Jobs |
+| **CI/CD** | GitHub Actions |
+| **Version Control** | Git, GitHub |
 
----
+## 🏗️ Project Architecture
 
-## System Architecture
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       User Browser                          │
+└────────────────────────┬────────────────────────────────────┘
+                         │ HTTP Request
+                         ▼
+        ┌────────────────────────────────┐
+        │   Nginx Reverse Proxy :80      │
+        └─────────┬──────────┬──────────┘
+                  │          │
+        ┌─────────▼┐  ┌─────▼──────────────┐
+        │ Frontend │  │   /api Route       │
+        │  Static  │  │                    │
+        │  Files   │  │  Node.js Express   │
+        └──────────┘  │     Backend        │
+                      │   PM2 Managed      │
+                      └────────┬───────────┘
+                               │
+                ┌──────────────┼──────────────┐
+                │              │              │
+        ┌───────▼────┐  ┌──────▼────┐  ┌────▼─────┐
+        │  Server    │  │  Docker   │  │  Trivy   │
+        │  Metrics   │  │    CLI    │  │  Cache   │
+        └────────────┘  └───────────┘  └──────────┘
+```
 
-```text
-User Browser
-    |
-    | HTTP Request
-    v
-Nginx Reverse Proxy :80
-    |
-    |----------------------------|
-    |                            |
-Frontend Static Files        /api Route
-/var/www/cloudops-sentinel       |
-                                 v
-                         Node.js Express Backend
-                         PM2 Managed Process
-                                 |
-        ------------------------------------------------
-        |               |              |               |
- Server Metrics     Docker CLI      Trivy Cache     PDF Reports
- CPU/RAM/Disk       Containers      JSON Results    Generated PDFs
-        |
-        v
- Email Alerts and Daily PDF Reports
-Key Features
-1. Live Server Health Monitoring
+## 🌐 Live Application
 
-The dashboard fetches real-time EC2 server data from the backend API.
+| Service | URL | Type |
+|---|---|---|
+| CloudOps Dashboard | `http://3.110.173.200` | Frontend |
+| Server Health API | `/api/server-health` | GET |
+| Docker Containers API | `/api/docker-containers` | GET |
+| Trivy Summary API | `/api/trivy-summary` | GET |
+| PDF Reports API | `/api/reports` | GET |
+| Alerts History API | `/api/alerts-history` | GET |
 
-Monitored details include:
+> **Note:** Domain and SSL will be added later. Currently served via EC2 public IP.
 
-Server status
-Hostname
-Public IP
-Private IP
-CPU usage
-Memory usage
-Disk usage
-Total memory
-Free memory
-Server uptime
-Nginx status
-Last checked time
+## 🚀 Getting Started
 
-API endpoint:
+### Prerequisites
+- AWS EC2 instance (Ubuntu 22.04+)
+- Docker and Docker Compose installed
+- Node.js v18+ and npm
+- Git
+- GitHub account
 
-/api/server-health
-2. Docker Container Monitoring
+### Installation
 
-CloudOps Sentinel displays live Docker container data from the EC2 server.
+1. **Clone the Repository**
+```bash
+git clone https://github.com/ppiyushhhhh/sentinel-cloud-view.git
+cd CloudOps-Sentinel
+```
 
-Displayed container details include:
+2. **Install Frontend Dependencies**
+```bash
+npm install
+npm run build
+```
 
-Container name
-Docker image
-Container status
-Exposed ports
+3. **Install Backend Dependencies**
+```bash
+cd backend
+npm install
+```
 
-API endpoint:
+4. **Setup Environment Variables**
+```bash
+# Create .env file in backend directory
+cat > backend/.env << EOF
+EMAIL_USER=your_gmail@gmail.com
+EMAIL_PASS=your_gmail_app_password
+EMAIL_TO=receiver@gmail.com
+EOF
+```
 
-/api/docker-containers
+5. **Start Backend with PM2**
+```bash
+cd backend
+pm2 start server.js --name cloudops-backend --update-env
+pm2 save
+```
 
-Docker command used internally:
+6. **Configure Nginx**
+```bash
+# Copy Nginx config and restart
+sudo nginx -t
+sudo systemctl restart nginx
+```
 
-docker ps -a --format '{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}'
+7. **Setup Cron Jobs**
+```bash
+crontab -e
 
-A timeout is added in the backend to prevent the API from hanging if Docker becomes unavailable.
-
-3. Trivy Security Scanning
-
-Trivy is used to scan Docker images for vulnerabilities.
-
-The system tracks vulnerabilities by severity:
-
-Critical
-High
-Medium
-Low
-Total vulnerabilities
-
-Scanned images:
-
-cloudops-sentinel-cloudops-frontend:latest
-cloudops-sentinel-cloudops-backend:latest
-
-API endpoint:
-
-/api/trivy-summary
-
-To avoid slow API responses, Trivy scan results are cached in JSON files:
-
-backend/trivy-cache/frontend-trivy.json
-backend/trivy-cache/backend-trivy.json
-backend/trivy-cache/last-scan.txt
-4. Professional PDF Infrastructure Reports
-
-The backend generates PDF reports using PDFKit.
-
-The report includes:
-
-Executive summary
-Overall health score
-CPU usage
-Memory usage
-Disk usage
-Server details
-Docker container status
-Trivy vulnerability summary
-Operational recommendations
-Report generation timestamp
-
-API endpoint to generate report:
-
-/api/generate-report
-
-API endpoint to list generated reports:
-
-/api/reports
-
-Generated reports are stored in:
-
-backend/reports/
-5. Automated Email Reports
-
-The system sends infrastructure PDF reports through email using Nodemailer and Gmail App Password.
-
-Report email API:
-
-/api/generate-and-email-report
-
-Daily report automation is configured using cron.
-
-Current schedule:
-
-7:00 AM daily
-7:00 PM daily
-
-Cron entries:
-
+# Add these lines:
+30 7 * * * /home/ubuntu/CloudOps-Sentinel/backend/run-trivy-scan.sh >> /home/ubuntu/CloudOps-Sentinel/backend/trivy-cache/trivy-cron.log 2>&1
 0 7 * * * /home/ubuntu/CloudOps-Sentinel/backend/daily-email-report.sh >> /home/ubuntu/CloudOps-Sentinel/backend/reports/email-cron.log 2>&1
 0 19 * * * /home/ubuntu/CloudOps-Sentinel/backend/daily-email-report.sh >> /home/ubuntu/CloudOps-Sentinel/backend/reports/email-cron.log 2>&1
-6. Automated Email Alerts
-
-CloudOps Sentinel sends alert emails when important thresholds are crossed.
-
-Current alert conditions:
-
-Alert Type	Threshold / Condition
-Disk Usage	60% or higher
-Memory Usage	80% or higher
-CPU Usage	80% or higher
-Backend API	Down or unavailable
-Frontend Site	Down or unavailable
-Docker Containers	Stopped containers detected
-
-Alert API:
-
-/api/send-alert
-
-Alert history API:
-
-/api/alerts-history
-
-Alert check cron job:
-
 */5 * * * * /home/ubuntu/CloudOps-Sentinel/backend/alert-check.sh >> /home/ubuntu/CloudOps-Sentinel/backend/reports/alert-cron.log 2>&1
-7. EC2 Stopped Instance Alert
+```
 
-For stopped EC2 instance alerts, the project uses AWS-level monitoring because an EC2 instance cannot send email after it is stopped.
+## 📚 API Documentation
 
-Recommended AWS services:
+### Server Health
+```bash
+curl http://3.110.173.200/api/server-health
+```
+**Response:**
+```json
+{
+  "status": "online",
+  "hostname": "ip-172-31-0-1",
+  "publicIp": "3.110.173.200",
+  "privateIp": "172.31.0.1",
+  "cpuUsage": 25.5,
+  "memoryUsage": 45.2,
+  "diskUsage": 38.7,
+  "uptime": 432000,
+  "nginxStatus": "running",
+  "lastChecked": "2024-01-15T10:30:00Z"
+}
+```
 
-Amazon EventBridge
-Amazon SNS
+### Docker Containers
+```bash
+curl http://3.110.173.200/api/docker-containers
+```
+**Response:**
+```json
+{
+  "containers": [
+    {
+      "name": "cloudops-frontend",
+      "image": "cloudops-sentinel-cloudops-frontend:latest",
+      "status": "running",
+      "ports": "80"
+    }
+  ]
+}
+```
 
-Flow:
+### Trivy Summary
+```bash
+curl http://3.110.173.200/api/trivy-summary
+```
+**Response:**
+```json
+{
+  "critical": 2,
+  "high": 5,
+  "medium": 12,
+  "low": 18,
+  "total": 37,
+  "lastScan": "2024-01-15T07:30:00Z"
+}
+```
 
-EC2 State Change → EventBridge Rule → SNS Topic → Email Notification
+### Generate Report
+```bash
+curl http://3.110.173.200/api/generate-report
+```
 
-This ensures an email is sent when the EC2 instance enters states such as:
+### List Reports
+```bash
+curl http://3.110.173.200/api/reports
+```
 
-stopping
-stopped
-shutting-down
-terminated
-8. CI/CD Pipeline with GitHub Actions
+## ⚙️ Configuration
 
-GitHub Actions is configured to deploy the application automatically when changes are pushed to the main branch.
+### Environment Variables
+Create `backend/.env`:
+```env
+EMAIL_USER=your_gmail@gmail.com
+EMAIL_PASS=your_gmail_app_password
+EMAIL_TO=receiver@gmail.com
+```
 
-CI/CD workflow:
+> **Important:** `EMAIL_PASS` must be a Gmail App Password, not your regular Gmail password.
 
-Push to main branch
-        |
-        v
-GitHub Actions starts
-        |
-        v
-SSH into AWS EC2
-        |
-        v
-Pull latest code
-        |
-        v
-Install dependencies
-        |
-        v
-Build frontend
-        |
-        v
-Copy frontend build to Nginx web root
-        |
-        v
-Install backend dependencies
-        |
-        v
-Restart backend using PM2
-        |
-        v
-Test and restart Nginx
-
-Workflow file:
-
-.github/workflows/deploy.yml
-
-Deployment target:
-
-/home/ubuntu/CloudOps-Sentinel
-
-Nginx web root:
-
-/var/www/cloudops-sentinel
-
-Backend process:
-
-cloudops-backend
-GitHub Actions Secrets
-
-The following GitHub repository secrets are used:
-
-Secret Name	Purpose
-EC2_HOST	EC2 public IP
-EC2_USER	SSH user, usually ubuntu
-EC2_SSH_KEY	Private SSH key used by GitHub Actions
-EC2_PROJECT_PATH	Project path on EC2
-
-Example:
-
-EC2_HOST=3.110.173.200
-EC2_USER=ubuntu
-EC2_PROJECT_PATH=/home/ubuntu/CloudOps-Sentinel
-Nginx Reverse Proxy Setup
-
-Nginx serves the React frontend and proxies API requests to the backend.
-
-Frontend:
-
-http://3.110.173.200
-
-Backend through reverse proxy:
-
-http://3.110.173.200/api
-
-Nginx configuration:
-
+### Nginx Configuration
+```nginx
 server {
     listen 80;
     server_name 3.110.173.200;
@@ -339,69 +334,84 @@ server {
     location /api/ {
         proxy_pass http://127.0.0.1:5000/api/;
         proxy_http_version 1.1;
-
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
-PM2 Backend Management
+```
 
-The backend is managed using PM2.
+### GitHub Actions Secrets
+Configure these secrets in your GitHub repository:
 
-Start backend:
+| Secret | Example Value |
+|---|---|
+| `EC2_HOST` | `3.110.173.200` |
+| `EC2_USER` | `ubuntu` |
+| `EC2_SSH_KEY` | `your_private_ssh_key` |
+| `EC2_PROJECT_PATH` | `/home/ubuntu/CloudOps-Sentinel` |
 
-cd ~/CloudOps-Sentinel/backend
-pm2 start server.js --name cloudops-backend --update-env
-pm2 save
+## 🔐 Security
 
-Restart backend:
+### Current Security Measures
+- ✅ Backend behind Nginx reverse proxy at `/api` route
+- ✅ Backend port 5000 not exposed publicly
+- ✅ Production frontend build served via Nginx
+- ✅ PM2 keeps backend process alive
+- ✅ Trivy scans Docker images for vulnerabilities
+- ✅ Email alerts on infrastructure risks
+- ✅ Cron-based automated monitoring
 
-pm2 restart cloudops-backend --update-env
+### Recommended AWS Security Group Rules
+```
+Inbound Rules:
+- Port 22 (SSH)
+- Port 80 (HTTP)
+- Port 443 (HTTPS) - after SSL setup
 
-Check status:
+Do NOT expose publicly:
+- 5000 (Backend)
+- 8080, 8081, 8082 (Optional services)
+- 5173 (Vite dev server)
+- 9090 (Other services)
+```
 
-pm2 status
+## 🎯 Challenges & Solutions
 
-View logs:
+### Challenge 1: Frontend Showing Dummy Data
+**Problem:** Mock data instead of real API calls  
+**Solution:** Replaced mock imports with real API endpoints
 
-pm2 logs cloudops-backend
-Cron Jobs
+### Challenge 2: Backend Port 5000 Not Working
+**Problem:** JavaScript syntax/runtime errors  
+**Solution:** Fixed code errors via PM2 logs and restarted process
 
-Current automation jobs:
+### Challenge 3: Docker Permission Issues
+**Problem:** Backend couldn't access Docker socket  
+**Solution:**
+```bash
+sudo usermod -aG docker ubuntu
+sudo chown root:docker /var/run/docker.sock
+sudo chmod 660 /var/run/docker.sock
+```
 
-crontab -l
+### Challenge 4: Trivy Scan Slowing Down API
+**Problem:** Running Trivy in API requests caused delays  
+**Solution:** Cached Trivy results in JSON files, API reads from cache
 
-Expected cron jobs:
+### Challenge 5: PDF Report Formatting
+**Problem:** Poor alignment and layout  
+**Solution:** Improved with proper headers, cards, tables, and footers
 
-30 7 * * * /home/ubuntu/CloudOps-Sentinel/backend/run-trivy-scan.sh >> /home/ubuntu/CloudOps-Sentinel/backend/trivy-cache/trivy-cron.log 2>&1
+### Challenge 6: GitHub Push Permission Issues
+**Problem:** Deploy key read-only, couldn't push changes  
+**Solution:** Changed remote to SSH and used deploy key with write access
 
-0 7 * * * /home/ubuntu/CloudOps-Sentinel/backend/daily-email-report.sh >> /home/ubuntu/CloudOps-Sentinel/backend/reports/email-cron.log 2>&1
+## 📁 Project Structure
 
-0 19 * * * /home/ubuntu/CloudOps-Sentinel/backend/daily-email-report.sh >> /home/ubuntu/CloudOps-Sentinel/backend/reports/email-cron.log 2>&1
-
-*/5 * * * * /home/ubuntu/CloudOps-Sentinel/backend/alert-check.sh >> /home/ubuntu/CloudOps-Sentinel/backend/reports/alert-cron.log 2>&1
-Environment Variables
-
-The backend uses a .env file for email configuration.
-
-File location:
-
-backend/.env
-
-Example:
-
-EMAIL_USER=yourgmail@gmail.com
-EMAIL_PASS=your_gmail_app_password
-EMAIL_TO=receiver@gmail.com
-
-Important:
-
-EMAIL_PASS must be a Gmail App Password, not the normal Gmail password.
-Project Folder Structure
+```
 CloudOps-Sentinel/
-│
 ├── backend/
 │   ├── server.js
 │   ├── package.json
@@ -411,7 +421,6 @@ CloudOps-Sentinel/
 │   ├── alert-check.sh
 │   ├── daily-email-report.sh
 │   └── run-trivy-scan.sh
-│
 ├── src/
 │   ├── pages/
 │   │   ├── DashboardPage.tsx
@@ -422,212 +431,107 @@ CloudOps-Sentinel/
 │   │   ├── AlertsPage.tsx
 │   │   ├── PipelinePage.tsx
 │   │   └── SettingsPage.tsx
-│   │
 │   ├── components/
 │   │   ├── TopBar.tsx
 │   │   └── AppSidebar.tsx
-│   │
 │   └── main.tsx
-│
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml
-│
 ├── Dockerfile
 ├── docker-compose.yml
 ├── package.json
 ├── vite.config.ts
 └── README.md
-API Endpoints
-Method	Endpoint	Description
-GET	/api/server-health	Returns live EC2 server metrics
-GET	/api/docker-containers	Returns Docker container list
-GET	/api/trivy-summary	Returns cached Trivy vulnerability summary
-GET	/api/generate-report	Generates a PDF report
-GET	/api/generate-and-email-report	Generates and emails PDF report
-GET	/api/reports	Lists generated PDF reports
-GET	/api/reports/:fileName	Downloads a PDF report
-GET	/api/send-alert	Sends alert email
-GET	/api/alerts-history	Returns alert log history
-Manual Deployment Commands
+```
 
-If CI/CD is not used, the project can be manually deployed using:
+## 📊 Current Project Status
 
+| Component | Status |
+|---|---|
+| Frontend Dashboard | ✅ Completed |
+| Backend API | ✅ Completed |
+| Server Health Monitoring | ✅ Completed |
+| Docker Monitoring | ✅ Completed |
+| Trivy Security Scanning | ✅ Completed |
+| PDF Report Generation | ✅ Completed |
+| Email Report Sending | ✅ Completed |
+| Alert Email System | ✅ Completed |
+| Alert History Page | ✅ Completed |
+| Nginx Reverse Proxy | ✅ Completed |
+| GitHub Actions CI/CD | ✅ Configured |
+| Custom Domain | ⏳ Planned |
+| SSL Certificate | ⏳ Planned |
+| GitHub Actions Trivy Gate | ⏳ Planned |
+
+## 🚦 Future Improvements
+
+- [ ] Add custom domain name
+- [ ] Setup SSL certificate with Certbot
+- [ ] Implement GitHub Actions Trivy security gate
+- [ ] Display real GitHub Actions workflow status
+- [ ] Add authentication/authorization layer
+- [ ] Integrate Grafana for historical charts
+- [ ] Store report metadata in database
+- [ ] Add Slack/Telegram alerts
+- [ ] CloudWatch integration
+- [ ] AWS EventBridge and SNS for EC2 state alerts
+
+## 📝 Manual Deployment
+
+If not using GitHub Actions CI/CD:
+
+```bash
 cd ~/CloudOps-Sentinel
 
+# Update code
 git fetch origin main
 git reset --hard origin/main
 
+# Build frontend
 npm install
 npm run build
 
+# Deploy frontend
 sudo rm -rf /var/www/cloudops-sentinel/*
 sudo cp -r dist/* /var/www/cloudops-sentinel/
 sudo chown -R www-data:www-data /var/www/cloudops-sentinel
 
+# Deploy backend
 cd backend
 npm install
-
 pm2 restart cloudops-backend --update-env || pm2 start server.js --name cloudops-backend --update-env
 pm2 save
 
+# Restart web server
 sudo nginx -t
 sudo systemctl restart nginx
-Security Hardening
+```
 
-Current security improvements:
+## 📄 License
 
-Backend is served behind Nginx /api reverse proxy
-Public users do not need direct access to backend port 5000
-Nginx serves production frontend build
-PM2 keeps backend process alive
-Trivy scans Docker images for vulnerabilities
-Email alerts notify about infrastructure risks
-PDF reports provide operational visibility
-Cron automates scheduled monitoring tasks
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Recommended AWS Security Group inbound rules:
+## 🤝 Contributing
 
-Port	Purpose
-22	SSH
-80	HTTP website
-443	HTTPS after domain SSL setup
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Ports to avoid exposing publicly after Nginx setup:
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-5000, 8080, 8081, 8082, 5173, 9090
-Challenges Faced and Solutions
-1. Frontend Showing Dummy Data
+## 📞 Support
 
-Problem:
+For issues, questions, or suggestions, please open a GitHub issue or contact the author.
 
-The frontend pages were importing mock data from:
+## 👨‍💼 Author
 
-@/data/mock
-
-Solution:
-
-Replaced mock imports with real API calls using:
-
-/api/server-health
-/api/docker-containers
-/api/trivy-summary
-/api/reports
-/api/alerts-history
-2. Backend Port 5000 Not Working
-
-Problem:
-
-Backend was not listening on port 5000 due to JavaScript syntax/runtime errors.
-
-Solution:
-
-Checked PM2 logs:
-
-pm2 logs cloudops-backend
-
-Fixed backend code and restarted PM2:
-
-pm2 restart cloudops-backend --update-env
-3. Docker Permission Issue
-
-Problem:
-
-Backend could not access Docker socket.
-
-Solution:
-
-Added the ubuntu user to Docker group and fixed Docker socket permissions.
-
-sudo usermod -aG docker ubuntu
-sudo chown root:docker /var/run/docker.sock
-sudo chmod 660 /var/run/docker.sock
-4. Trivy Scan Slowing Down API
-
-Problem:
-
-Running Trivy directly inside API requests caused slow responses.
-
-Solution:
-
-Created cached Trivy scans stored in JSON files and read those cached results from the backend API.
-
-5. PDF Report Alignment Issues
-
-Problem:
-
-The initial PDF report was plain and poorly aligned.
-
-Solution:
-
-Improved PDF layout with:
-
-Header section
-Summary cards
-Tables
-Risk status
-Recommendations
-Footer
-6. CI/CD GitHub Pull Issue on EC2
-
-Problem:
-
-EC2 repository used HTTPS remote, causing GitHub username/password prompt.
-
-Solution:
-
-Changed remote to SSH:
-
-git remote set-url origin git@github.com:ppiyushhhhh/sentinel-cloud-view.git
-
-Added SSH deploy key to GitHub.
-
-7. GitHub Push Permission Issue
-
-Problem:
-
-EC2 deploy key was read-only and could not push changes.
-
-Solution:
-
-Either push from local laptop or add a deploy key with write access.
-
-Current Project Status
-Component	Status
-Frontend Dashboard	Completed
-Backend API	Completed
-Server Health Monitoring	Completed
-Docker Monitoring	Completed
-Trivy Security Summary	Completed
-PDF Report Generation	Completed
-Email Report Sending	Completed
-Alert Email System	Completed
-Alert History Page	Completed
-Nginx Reverse Proxy	Completed
-GitHub Actions CI/CD	Configured
-Domain	Planned
-SSL Certificate	Planned after domain setup
-GitHub Actions Trivy Gate	Planned upgrade
-Future Improvements
-
-Planned enhancements:
-
-Add domain name
-Add SSL certificate using Certbot
-Add GitHub Actions Trivy security gate
-Show real GitHub Actions workflow status on Pipeline page
-Add authentication to dashboard
-Add Grafana integration
-Add historical metric charts
-Store report metadata in database
-Add Slack or Telegram alerts
-Add CloudWatch integration
-Add AWS EventBridge and SNS for EC2 stopped-state alerts
-Resume Highlight
-
-CloudOps Sentinel is a production-ready DevOps monitoring and automation project deployed on AWS EC2. It includes a React dashboard, Node.js backend APIs, Docker monitoring, Trivy security scanning, automated PDF infrastructure reports, email alerting, Nginx reverse proxy, PM2 process management, cron automation, and GitHub Actions CI/CD deployment.
-
-Author
-
-Piyush Prasad
+**Piyush Prasad**  
 Aspiring Cloud and DevOps Engineer
+
+- 🌐 GitHub: [@ppiyushhhhh](https://github.com/ppiyushhhhh)
+- 📧 Email: [piyushprasad8122@gmail.com]
+- 💼 LinkedIn: [www.linkedin.com/in/ppiyushhhh]
+
