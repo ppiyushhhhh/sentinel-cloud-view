@@ -593,6 +593,105 @@ app.get("/api/trivy-summary", (req, res) => {
   res.json(getTrivySummary());
 });
 
+
+app.get("/api/trivy-vulnerabilities", (req, res) => {
+  try {
+    const frontendFile = path.join(TRIVY_CACHE_DIR, "frontend-trivy.json");
+    const backendFile = path.join(TRIVY_CACHE_DIR, "backend-trivy.json");
+
+    const frontendScan = readFileSafe(frontendFile);
+    const backendScan = readFileSafe(backendFile);
+
+    function extractVulnerabilities(scanOutput, imageName) {
+      if (!scanOutput) {
+        return [];
+      }
+
+      try {
+        const parsed = JSON.parse(scanOutput);
+        const vulnerabilities = [];
+
+        if (!parsed.Results) {
+          return [];
+        }
+
+        parsed.Results.forEach((result) => {
+          if (!result.Vulnerabilities) return;
+
+          result.Vulnerabilities.forEach((vuln) => {
+            vulnerabilities.push({
+              image: imageName,
+              target: result.Target || "N/A",
+              type: result.Type || "N/A",
+              vulnerabilityId: vuln.VulnerabilityID || "N/A",
+              severity: vuln.Severity || "UNKNOWN",
+              packageName: vuln.PkgName || "N/A",
+              installedVersion: vuln.InstalledVersion || "N/A",
+              fixedVersion: vuln.FixedVersion || "Not Available",
+              title: vuln.Title || "N/A",
+              description: vuln.Description || "N/A",
+              primaryUrl: vuln.PrimaryURL || "",
+              publishedDate: vuln.PublishedDate || "N/A",
+              lastModifiedDate: vuln.LastModifiedDate || "N/A"
+            });
+          });
+        });
+
+        return vulnerabilities;
+      } catch {
+        return [];
+      }
+    }
+
+    const frontendVulnerabilities = extractVulnerabilities(
+      frontendScan,
+      "cloudops-sentinel-cloudops-frontend:latest"
+    );
+
+    const backendVulnerabilities = extractVulnerabilities(
+      backendScan,
+      "cloudops-sentinel-cloudops-backend:latest"
+    );
+
+    const allVulnerabilities = [
+      ...frontendVulnerabilities,
+      ...backendVulnerabilities
+    ];
+
+    const severityOrder = {
+      CRITICAL: 1,
+      HIGH: 2,
+      MEDIUM: 3,
+      LOW: 4,
+      UNKNOWN: 5
+    };
+
+    allVulnerabilities.sort((a, b) => {
+      return (
+        (severityOrder[a.severity] || 5) -
+        (severityOrder[b.severity] || 5)
+      );
+    });
+
+    res.json({
+      total: allVulnerabilities.length,
+      summary: {
+        critical: allVulnerabilities.filter((v) => v.severity === "CRITICAL").length,
+        high: allVulnerabilities.filter((v) => v.severity === "HIGH").length,
+        medium: allVulnerabilities.filter((v) => v.severity === "MEDIUM").length,
+        low: allVulnerabilities.filter((v) => v.severity === "LOW").length,
+        unknown: allVulnerabilities.filter((v) => v.severity === "UNKNOWN").length
+      },
+      vulnerabilities: allVulnerabilities
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to read Trivy vulnerabilities",
+      error: error.message
+    });
+  }
+});
+
 app.get("/api/generate-report", (req, res) => {
   const report = generatePdfReport();
 
