@@ -1,69 +1,85 @@
-import { alertRules, alertHistory } from "@/data/mock";
-import { StatusBadge } from "@/components/shared/MetricCard";
-import { Bell, Mail, CheckCircle2 } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
+import { useEffect, useState } from "react";
 
-export default function AlertsPage() {
+type AlertItem = {
+  id: number;
+  message: string;
+  timestamp: string;
+};
+
+const AlertsPage = () => {
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAlerts = () => {
+    fetch("/api/alerts-history")
+      .then((res) => res.json())
+      .then((data) => {
+        setAlerts(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch alerts:", error);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
+
+  const sendTestAlert = async () => {
+    await fetch("/api/send-alert?type=test&message=Manual test alert from CloudOps Sentinel dashboard");
+    fetchAlerts();
+    alert("Test alert sent. Check your email.");
+  };
+
+  if (loading) return <div className="p-6 text-white">Loading alert history...</div>;
+
   return (
-    <div className="space-y-6">
+    <div className="p-6 text-white space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Alerts</h1>
-        <p className="text-sm text-muted-foreground mt-1">Alert rules and notification history</p>
+        <h1 className="text-3xl font-bold">Alerts</h1>
+        <p className="text-sm text-zinc-400 mt-2">Email alert history and monitoring status.</p>
       </div>
 
-      {/* Alert Rules */}
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Bell className="h-4 w-4 text-primary" /> Alert Rules
-          </h3>
-        </div>
-        <div className="divide-y divide-border">
-          {alertRules.map((rule) => (
-            <div key={rule.name} className="flex items-center justify-between p-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">{rule.name}</p>
-                <p className="text-xs text-muted-foreground">{rule.condition}</p>
+      <button onClick={sendTestAlert} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold">
+        Send Test Alert
+      </button>
+
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Card title="Disk Alert" value="60%" />
+        <Card title="Memory Alert" value="80%" />
+        <Card title="CPU Alert" value="80%" />
+        <Card title="Backend" value="Monitored" />
+        <Card title="Docker" value="Monitored" />
+      </div>
+
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <h2 className="text-xl font-semibold mb-4">Alert History</h2>
+
+        {alerts.length === 0 ? (
+          <p className="text-zinc-400">No alerts found yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {alerts.map((alert) => (
+              <div key={alert.id} className="border border-zinc-800 rounded-lg p-4 bg-zinc-950">
+                <p className="text-sm text-zinc-300 break-words">{alert.message}</p>
               </div>
-              <Switch defaultChecked={rule.enabled} />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Alert History */}
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h3 className="text-sm font-semibold text-foreground">Alert History</h3>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground">Time</TableHead>
-              <TableHead className="text-muted-foreground">Type</TableHead>
-              <TableHead className="text-muted-foreground">Severity</TableHead>
-              <TableHead className="text-muted-foreground">Message</TableHead>
-              <TableHead className="text-muted-foreground">Email</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {alertHistory.map((a) => (
-              <TableRow key={a.id} className="border-border">
-                <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">{new Date(a.time).toLocaleString()}</TableCell>
-                <TableCell className="text-sm text-foreground">{a.type}</TableCell>
-                <TableCell>
-                  <StatusBadge status={a.severity} variant={a.severity === "critical" ? "danger" : a.severity === "warning" ? "warning" : "info"} />
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{a.message}</TableCell>
-                <TableCell>
-                  {a.emailSent ? <CheckCircle2 className="h-4 w-4 text-success" /> : <Mail className="h-4 w-4 text-muted-foreground" />}
-                </TableCell>
-              </TableRow>
             ))}
-          </TableBody>
-        </Table>
+          </div>
+        )}
       </div>
     </div>
   );
+};
+
+function Card({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+      <h3 className="text-sm text-zinc-400">{title}</h3>
+      <p className="text-lg font-semibold mt-2">{value}</p>
+    </div>
+  );
 }
+
+export default AlertsPage;

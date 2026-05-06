@@ -1,29 +1,35 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { serverStatus } from "@/data/mock";
-import { Circle, Wifi } from "lucide-react";
+import { useEffect, useState } from "react";
 
-export function TopBar() {
-  const isOnline = serverStatus.status === "online";
+type ServerHealth = {
+  status: string;
+  publicIp: string;
+  uptime: string;
+};
+
+export const TopBar = () => {
+  const [data, setData] = useState<ServerHealth | null>(null);
+
+  useEffect(() => {
+    fetch("/api/server-health")
+      .then((res) => res.json())
+      .then(setData)
+      .catch(console.error);
+  }, []);
+
   return (
-    <header className="h-14 flex items-center justify-between border-b border-border px-4 bg-card/50 backdrop-blur-sm">
-      <div className="flex items-center gap-3">
-        <SidebarTrigger />
-        <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground font-mono">
-          <Wifi className="h-3.5 w-3.5" />
-          <span>{serverStatus.publicIp}</span>
-        </div>
+    <div className="h-16 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between px-6 text-white">
+      <div className="text-sm text-zinc-400">
+        {data?.publicIp ? `Server IP: ${data.publicIp}` : "CloudOps Sentinel"}
       </div>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-sm">
-          <Circle className={`h-2.5 w-2.5 fill-current ${isOnline ? "text-success" : "text-critical"}`} />
-          <span className={isOnline ? "text-success" : "text-critical"}>
-            {isOnline ? "Online" : "Offline"}
-          </span>
-        </div>
-        <span className="text-xs text-muted-foreground font-mono">
-          Uptime: {serverStatus.uptime}
+
+      <div className="flex items-center gap-4 text-sm">
+        <span className="text-green-400 font-semibold">
+          ● {data?.status || "Checking"}
+        </span>
+        <span className="text-zinc-400">
+          Uptime: {data?.uptime || "N/A"}
         </span>
       </div>
-    </header>
+    </div>
   );
-}
+};
