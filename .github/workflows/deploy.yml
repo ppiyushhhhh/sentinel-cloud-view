@@ -22,6 +22,7 @@ jobs:
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy application on EC2
+        id: deploy
         run: |
           ssh -i ~/.ssh/cloudops_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
@@ -38,6 +39,8 @@ jobs:
             npm install
 
             echo "Checking memory..."
+            echo "Checking server memory..."
+            0bbdd53 (Add deployment email notifications to CI/CD)
             free -h
 
             echo "Building frontend..."
@@ -64,3 +67,23 @@ jobs:
 
             echo "Deployment completed successfully."
           EOF
+
+      - name: Send deployment success email
+        if: success()
+        run: |
+          MESSAGE="Deployment successful for CloudOps Sentinel. Repository: ${{ github.repository }} | Branch: ${{ github.ref_name }} | Commit: ${{ github.sha }} | Commit Message: ${{ github.event.head_commit.message }} | Triggered By: ${{ github.actor }} | Run Link: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          curl -G "http://${{ secrets.EC2_HOST }}/api/send-alert" \
+            --data-urlencode "type=deployment-success" \
+            --data-urlencode "message=$MESSAGE" \
+            --data-urlencode "force=true"
+
+      - name: Send deployment failure email
+        if: failure()
+        run: |
+          MESSAGE="Deployment failed for CloudOps Sentinel. Repository: ${{ github.repository }} | Branch: ${{ github.ref_name }} | Commit: ${{ github.sha }} | Commit Message: ${{ github.event.head_commit.message }} | Triggered By: ${{ github.actor }} | Run Link: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          curl -G "http://${{ secrets.EC2_HOST }}/api/send-alert" \
+            --data-urlencode "type=deployment-failed" \
+            --data-urlencode "message=$MESSAGE" \
+            --data-urlencode "force=true"
