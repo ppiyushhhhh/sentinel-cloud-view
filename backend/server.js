@@ -639,6 +639,52 @@ function isAlertActive(alertType) {
   return state[alertType]?.status === "active";
 }
 
+
+const METRICS_HISTORY_FILE = path.join(REPORT_DIR, "metrics-history.json");
+
+function readMetricsHistory() {
+  try {
+    if (!fs.existsSync(METRICS_HISTORY_FILE)) {
+      return [];
+    }
+
+    return JSON.parse(fs.readFileSync(METRICS_HISTORY_FILE, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+function writeMetricsHistory(history) {
+  fs.writeFileSync(METRICS_HISTORY_FILE, JSON.stringify(history, null, 2));
+}
+
+function collectMetricSnapshot() {
+  const serverHealth = getServerHealth();
+
+  const snapshot = {
+    timestamp: new Date().toISOString(),
+    cpuUsage: serverHealth.cpuUsage,
+    memoryUsage: serverHealth.memoryUsage,
+    diskUsage: serverHealth.diskUsage,
+    uptime: serverHealth.uptime,
+    status: serverHealth.status
+  };
+
+  const history = readMetricsHistory();
+
+  history.push(snapshot);
+
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+  const cleanedHistory = history.filter((item) => {
+    return new Date(item.timestamp).getTime() >= sevenDaysAgo;
+  });
+
+  writeMetricsHistory(cleanedHistory);
+
+  return snapshot;
+}
+
 /* =========================
    ROUTES
 ========================= */
@@ -906,6 +952,25 @@ app.get("/api/alerts-history", (req, res) => {
       timestamp: new Date().toISOString()
     }))
   );
+});
+
+
+app.get("/api/metrics-history", (req, res) => {
+  const history = readMetricsHistory();
+
+  res.json({
+    total: history.length,
+    history
+  });
+});
+
+app.get("/api/collect-metrics", (req, res) => {
+  const snapshot = collectMetricSnapshot();
+
+  res.json({
+    message: "Metric snapshot collected successfully",
+    snapshot
+  });
 });
 
 app.get("/api/github-actions", async (req, res) => {
