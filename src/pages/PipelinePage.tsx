@@ -1,72 +1,82 @@
-import { pipelineSteps, pipelineHistory } from "@/data/mock";
-import { StatusBadge } from "@/components/shared/MetricCard";
-import { CheckCircle2, XCircle, Loader2, Circle } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-const stepIcon = (status: string) => {
-  switch (status) {
-    case "success": return <CheckCircle2 className="h-5 w-5 text-success" />;
-    case "failed": return <XCircle className="h-5 w-5 text-critical" />;
-    case "running": return <Loader2 className="h-5 w-5 text-primary animate-spin" />;
-    default: return <Circle className="h-5 w-5 text-muted-foreground" />;
-  }
-};
-
-export default function PipelinePage() {
+const PipelinePage = () => {
   return (
-    <div className="space-y-6">
+    <div className="p-6 text-white space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">CI/CD Pipeline</h1>
-        <p className="text-sm text-muted-foreground mt-1">GitHub Actions deployment timeline</p>
+        <h1 className="text-3xl font-bold">CI/CD Pipeline</h1>
+        <p className="text-sm text-zinc-400 mt-2">
+          Deployment automation status for CloudOps Sentinel.
+        </p>
       </div>
 
-      {/* Pipeline Timeline */}
-      <div className="rounded-lg border border-border bg-card p-6">
-        <h3 className="text-sm font-semibold text-foreground mb-6">Latest Deployment</h3>
-        <div className="space-y-0">
-          {pipelineSteps.map((step, i) => (
-            <div key={step.id} className="flex items-start gap-4">
-              <div className="flex flex-col items-center">
-                {stepIcon(step.status)}
-                {i < pipelineSteps.length - 1 && <div className="w-px h-8 bg-border" />}
-              </div>
-              <div className="pb-8">
-                <p className="text-sm font-medium text-foreground">{step.name}</p>
-                <p className="text-xs text-muted-foreground font-mono">{step.time} • {step.duration}</p>
-              </div>
-            </div>
-          ))}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <h2 className="text-xl font-semibold mb-4">Current Pipeline Status</h2>
+
+        <div className="space-y-3 text-sm">
+          <p>
+            <span className="text-zinc-400">Status:</span>{" "}
+            <span className="text-green-400 font-semibold">CI/CD Configured</span>
+          </p>
+
+          <p>
+            <span className="text-zinc-400">Source Code:</span>{" "}
+            GitHub Repository
+          </p>
+
+          <p>
+            <span className="text-zinc-400">Trigger:</span>{" "}
+            Push to main branch
+          </p>
+
+          <p>
+            <span className="text-zinc-400">Deployment Target:</span>{" "}
+            AWS EC2
+          </p>
+
+          <p>
+            <span className="text-zinc-400">Frontend Deployment:</span>{" "}
+            React/Vite build copied to Nginx web root
+          </p>
+
+          <p>
+            <span className="text-zinc-400">Backend Deployment:</span>{" "}
+            Node.js/Express restarted using PM2
+          </p>
+
+          <p>
+            <span className="text-zinc-400">Web Server:</span>{" "}
+            Nginx reverse proxy
+          </p>
         </div>
       </div>
 
-      {/* History */}
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h3 className="text-sm font-semibold text-foreground">Deployment History</h3>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <h2 className="text-xl font-semibold mb-4">Active Deployment Flow</h2>
+
+        <div className="space-y-3 text-sm">
+          <p>1. Code is pushed to the GitHub main branch</p>
+          <p>2. GitHub Actions workflow starts automatically</p>
+          <p>3. GitHub Actions connects to EC2 using SSH</p>
+          <p>4. EC2 pulls the latest code from GitHub</p>
+          <p>5. Frontend dependencies are installed</p>
+          <p>6. Frontend production build is generated</p>
+          <p>7. Build files are copied to /var/www/cloudops-sentinel</p>
+          <p>8. Backend dependencies are installed</p>
+          <p>9. PM2 restarts the backend API</p>
+          <p>10. Nginx configuration is tested and restarted</p>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground">Commit</TableHead>
-              <TableHead className="text-muted-foreground">Status</TableHead>
-              <TableHead className="text-muted-foreground">Duration</TableHead>
-              <TableHead className="text-muted-foreground">Time</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pipelineHistory.map((p) => (
-              <TableRow key={p.id} className="border-border">
-                <TableCell className="font-mono text-sm text-foreground">{p.commit}</TableCell>
-                <TableCell>
-                  <StatusBadge status={p.status} variant={p.status === "success" ? "success" : "danger"} />
-                </TableCell>
-                <TableCell className="font-mono text-sm text-muted-foreground">{p.duration}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{new Date(p.time).toLocaleString()}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      </div>
+
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <h2 className="text-xl font-semibold mb-4">Recommended Next Upgrade</h2>
+
+        <p className="text-sm text-zinc-300 leading-6">
+          Add Trivy scanning inside GitHub Actions so the pipeline checks Docker
+          image vulnerabilities before production deployment. You can also add
+          build status data later by integrating the GitHub Actions API.
+        </p>
       </div>
     </div>
   );
-}
+};
+
+export default PipelinePage;

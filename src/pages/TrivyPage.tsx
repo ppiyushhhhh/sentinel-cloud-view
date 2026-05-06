@@ -1,78 +1,142 @@
-import { trivySummary, vulnerabilities } from "@/data/mock";
-import { StatusBadge } from "@/components/shared/MetricCard";
-import { Shield, AlertTriangle } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useEffect, useState } from "react";
 
-const severityVariant = (s: string) => {
-  switch (s) {
-    case "CRITICAL": return "danger" as const;
-    case "HIGH": return "warning" as const;
-    case "MEDIUM": return "info" as const;
-    default: return "neutral" as const;
-  }
+type Summary = {
+  low: number;
+  medium: number;
+  high: number;
+  critical: number;
+  total: number;
 };
 
-export default function TrivyPage() {
+type TrivyData = {
+  frontend: Summary;
+  backend: Summary;
+  scannedImages: {
+    frontend: string;
+    backend: string;
+  };
+  scannedAt: string;
+};
+
+const TrivyPage = () => {
+  const [data, setData] = useState<TrivyData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/trivy-summary")
+      .then((res) => res.json())
+      .then((result) => {
+        setData(result);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch Trivy data:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return <div className="p-6 text-white">Loading Trivy scan data...</div>;
+  }
+
+  if (!data) {
+    return <div className="p-6 text-red-400">Failed to load Trivy data.</div>;
+  }
+
+  const totalCritical = data.frontend.critical + data.backend.critical;
+  const totalHigh = data.frontend.high + data.backend.high;
+  const totalMedium = data.frontend.medium + data.backend.medium;
+  const totalLow = data.frontend.low + data.backend.low;
+  const total = data.frontend.total + data.backend.total;
+
+  const status =
+    totalCritical > 0
+      ? "Critical Risk"
+      : totalHigh > 0
+      ? "High Risk"
+      : "Healthy";
+
   return (
-    <div className="space-y-6">
+    <div className="p-6 text-white space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Trivy Security</h1>
-        <p className="text-sm text-muted-foreground mt-1">Container image vulnerability scanning</p>
+        <h1 className="text-3xl font-bold">Trivy Security</h1>
+        <p className="text-sm text-zinc-400 mt-2">
+          Real cached Trivy Docker image scan results from your EC2 server.
+        </p>
       </div>
 
-      <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 flex items-center gap-3">
-        <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
-        <span className="text-sm text-warning font-medium">Deployment blocked if HIGH or CRITICAL vulnerabilities are found.</span>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <h2 className="text-xl font-semibold mb-2">Security Status</h2>
+        <p
+          className={`text-3xl font-bold ${
+            status === "Healthy"
+              ? "text-green-400"
+              : status === "High Risk"
+              ? "text-yellow-400"
+              : "text-red-400"
+          }`}
+        >
+          {status}
+        </p>
+        <p className="text-sm text-zinc-400 mt-2">
+          Last Scan: {data.scannedAt || "N/A"}
+        </p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {(["critical", "high", "medium", "low", "unknown"] as const).map((sev) => {
-          const colors: Record<string, string> = {
-            critical: "text-critical border-critical/30 bg-critical/10",
-            high: "text-warning border-warning/30 bg-warning/10",
-            medium: "text-primary border-primary/30 bg-primary/10",
-            low: "text-success border-success/30 bg-success/10",
-            unknown: "text-muted-foreground border-border bg-muted",
-          };
-          return (
-            <div key={sev} className={`rounded-lg border p-4 text-center ${colors[sev]}`}>
-              <span className="text-3xl font-bold">{trivySummary[sev]}</span>
-              <p className="text-xs font-semibold uppercase mt-1">{sev}</p>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
+        <Card title="Critical" value={String(totalCritical)} />
+        <Card title="High" value={String(totalHigh)} />
+        <Card title="Medium" value={String(totalMedium)} />
+        <Card title="Low" value={String(totalLow)} />
+        <Card title="Total" value={String(total)} />
       </div>
 
-      {/* Vulnerabilities Table */}
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground">Package</TableHead>
-              <TableHead className="text-muted-foreground">Vulnerability ID</TableHead>
-              <TableHead className="text-muted-foreground">Severity</TableHead>
-              <TableHead className="text-muted-foreground">Installed</TableHead>
-              <TableHead className="text-muted-foreground">Fixed</TableHead>
-              <TableHead className="text-muted-foreground">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {vulnerabilities.map((v) => (
-              <TableRow key={v.vulnId} className="border-border">
-                <TableCell className="font-mono text-sm text-foreground">{v.pkg}</TableCell>
-                <TableCell className="font-mono text-xs text-primary">{v.vulnId}</TableCell>
-                <TableCell><StatusBadge status={v.severity} variant={severityVariant(v.severity)} /></TableCell>
-                <TableCell className="font-mono text-sm text-muted-foreground">{v.installed}</TableCell>
-                <TableCell className="font-mono text-sm text-muted-foreground">{v.fixed}</TableCell>
-                <TableCell>
-                  <StatusBadge status={v.status} variant={v.status === "Fixed" ? "success" : v.status === "Affected" ? "warning" : "neutral"} />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <ImageCard
+          title="Frontend Image"
+          image={data.scannedImages.frontend}
+          summary={data.frontend}
+        />
+
+        <ImageCard
+          title="Backend Image"
+          image={data.scannedImages.backend}
+          summary={data.backend}
+        />
       </div>
     </div>
   );
+};
+
+function Card({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+      <h3 className="text-sm text-zinc-400">{title}</h3>
+      <p className="text-4xl font-bold mt-2">{value}</p>
+    </div>
+  );
 }
+
+function ImageCard({
+  title,
+  image,
+  summary
+}: {
+  title: string;
+  image: string;
+  summary: Summary;
+}) {
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-2">
+      <h2 className="text-xl font-semibold">{title}</h2>
+      <p className="text-xs text-zinc-400 break-all">{image}</p>
+      <p>Critical: {summary.critical}</p>
+      <p>High: {summary.high}</p>
+      <p>Medium: {summary.medium}</p>
+      <p>Low: {summary.low}</p>
+      <p>Total: {summary.total}</p>
+    </div>
+  );
+}
+
+export default TrivyPage;
