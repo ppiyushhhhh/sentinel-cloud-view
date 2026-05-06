@@ -973,13 +973,14 @@ app.get("/api/collect-metrics", (req, res) => {
   });
 });
 
+
 app.get("/api/github-actions", async (req, res) => {
   try {
     const owner = "ppiyushhhhh";
     const repo = "sentinel-cloud-view";
 
     const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=5`,
+      `https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=20`,
       {
         headers: {
           Accept: "application/vnd.github+json",
@@ -997,24 +998,61 @@ app.get("/api/github-actions", async (req, res) => {
 
     const data = await response.json();
 
+    function calculateDuration(createdAt, updatedAt) {
+      if (!createdAt || !updatedAt) return "N/A";
+
+      const start = new Date(createdAt).getTime();
+      const end = new Date(updatedAt).getTime();
+
+      if (Number.isNaN(start) || Number.isNaN(end)) return "N/A";
+
+      const totalSeconds = Math.floor((end - start) / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+
+      return `${minutes}m ${seconds}s`;
+    }
+
     const runs = data.workflow_runs.map((run) => ({
       id: run.id,
+      runNumber: run.run_number,
       name: run.name,
+      displayTitle: run.display_title || run.name,
       status: run.status,
       conclusion: run.conclusion,
       branch: run.head_branch,
       commitMessage: run.head_commit?.message || "N/A",
       commitSha: run.head_sha?.substring(0, 7),
+      fullCommitSha: run.head_sha,
       actor: run.actor?.login || "N/A",
       event: run.event,
       createdAt: run.created_at,
       updatedAt: run.updated_at,
-      htmlUrl: run.html_url
+      duration: calculateDuration(run.created_at, run.updated_at),
+      htmlUrl: run.html_url,
+      workflowId: run.workflow_id,
+      runAttempt: run.run_attempt,
+      repository: run.repository?.full_name || `${owner}/${repo}`
     }));
+
+    const summary = {
+      totalRuns: runs.length,
+      successfulRuns: runs.filter(
+        (run) => run.status === "completed" && run.conclusion === "success"
+      ).length,
+      failedRuns: runs.filter(
+        (run) => run.status === "completed" && run.conclusion === "failure"
+      ).length,
+      inProgressRuns: runs.filter((run) => run.status === "in_progress").length,
+      cancelledRuns: runs.filter(
+        (run) => run.status === "completed" && run.conclusion === "cancelled"
+      ).length
+    };
 
     res.json({
       repository: `${owner}/${repo}`,
       latestRun: runs[0] || null,
+      summary,
       runs
     });
   } catch (error) {
@@ -1024,6 +1062,7 @@ app.get("/api/github-actions", async (req, res) => {
     });
   }
 });
+
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`CloudOps Backend Running On Port ${PORT}`);
