@@ -37,8 +37,11 @@ jobs:
             echo "Installing frontend dependencies..."
             npm install
 
+            echo "Checking memory..."
+            free -h
+
             echo "Building frontend..."
-            npm run build
+            NODE_OPTIONS="--max-old-space-size=1024" npm run build
 
             echo "Deploying frontend to Nginx..."
             sudo rm -rf /var/www/cloudops-sentinel/*
