@@ -6,14 +6,56 @@ on:
       - main
 
 jobs:
-  deploy:
-    name: Build and Deploy to AWS EC2
+  security-build-deploy:
+    name: DevSecOps Build, Scan and Deploy
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # -----------------------------
+      # BUILD CHECK ON GITHUB RUNNER
+      # -----------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build frontend
+        run: |
+          NODE_OPTIONS="--max-old-space-size=2048" npm run build
+
+      # -----------------------------
+      # TRIVY SECURITY GATE
+      # -----------------------------
+      - name: Run Trivy filesystem security scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          severity: CRITICAL
+          exit-code: 1
+          ignore-unfixed: true
+
+      - name: Run Trivy full report
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          severity: LOW,MEDIUM,HIGH,CRITICAL
+          exit-code: 0
+          ignore-unfixed: true
+
+      # -----------------------------
+      # SSH SETUP
+      # -----------------------------
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
@@ -21,6 +63,9 @@ jobs:
           chmod 600 ~/.ssh/cloudops_key
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
+      # -----------------------------
+      # DEPLOY TO EC2 ONLY IF TRIVY PASSES
+      # -----------------------------
       - name: Deploy application on EC2
         run: |
           ssh -i ~/.ssh/cloudops_key "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" << 'EOF'
@@ -56,6 +101,12 @@ jobs:
             pm2 restart cloudops-backend --update-env || pm2 start server.js --name cloudops-backend --update-env
             pm2 save
 
+            echo "Running Trivy cache scan on EC2 if script exists..."
+            if [ -f "/home/ubuntu/CloudOps-Sentinel/backend/run-trivy-scan.sh" ]; then
+              chmod +x /home/ubuntu/CloudOps-Sentinel/backend/run-trivy-scan.sh
+              /home/ubuntu/CloudOps-Sentinel/backend/run-trivy-scan.sh || true
+            fi
+
             echo "Testing Nginx config..."
             sudo nginx -t
 
@@ -65,11 +116,17 @@ jobs:
             echo "Deployment completed successfully."
           EOF
 
+      # -----------------------------
+      # SUCCESS EMAIL
+      # -----------------------------
       - name: Send deployment success email
         if: success()
         run: |
           cat > deployment-message.txt <<'EOF'
           Deployment successful for CloudOps Sentinel.
+
+          Security Gate: PASSED
+          Trivy Rule: Deployment blocked only for CRITICAL vulnerabilities
 
           Repository: ${{ github.repository }}
           Branch: ${{ github.ref_name }}
@@ -84,11 +141,20 @@ jobs:
             --data-urlencode "message@deployment-message.txt" \
             --data-urlencode "force=true"
 
+      # -----------------------------
+      # FAILURE EMAIL
+      # -----------------------------
       - name: Send deployment failure email
         if: failure()
         run: |
           cat > deployment-message.txt <<'EOF'
           Deployment failed for CloudOps Sentinel.
+
+          Possible Reason:
+          - Frontend build failed
+          - Trivy found CRITICAL vulnerabilities
+          - SSH deployment failed
+          - Nginx or PM2 restart failed
 
           Repository: ${{ github.repository }}
           Branch: ${{ github.ref_name }}
