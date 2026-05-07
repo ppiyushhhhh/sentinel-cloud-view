@@ -1,3 +1,4 @@
+import ActivityLogPage from "./pages/ActivityLogPage";
 import CleanupPage from "./pages/CleanupPage";
 import NginxLogsPage from "./pages/NginxLogsPage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -32,7 +33,8 @@ const App = () => (
             <Route path="/pipeline" element={<PipelinePage />} />
             <Route path="/trivy" element={<TrivyPage />} />
             <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/alerts" element={<AlertsPage />} />
+            <Route path="/activity" element={<ActivityLogPage />} />
+          <Route path="/alerts" element={<AlertsPage />} />
             <Route path="/nginx-logs" element={<NginxLogsPage />} />
           <Route path="/cleanup" element={<CleanupPage />} />
           <Route path="/settings" element={<SettingsPage />} />

@@ -44,6 +44,11 @@ const menuItems = [
     icon: FileText
   },
   {
+    title: "Activity Log",
+    url: "/activity",
+    icon: Activity
+  },
+  {
     title: "Alerts",
     url: "/alerts",
     icon: Bell

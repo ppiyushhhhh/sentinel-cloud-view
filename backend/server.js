@@ -1365,6 +1365,299 @@ app.get("/api/run-cleanup", (req, res) => {
   }
 });
 
+
+app.get("/api/activity-log", (req, res) => {
+  try {
+    const events = [];
+
+    function addEvent(type, severity, message, source, timestamp, metadata = {}) {
+      events.push({
+        id: `${type}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+        type,
+        severity,
+        message,
+        source,
+        timestamp: timestamp || new Date().toISOString(),
+        metadata
+      });
+    }
+
+    function safeStat(filePath) {
+      try {
+        if (!fs.existsSync(filePath)) return null;
+        return fs.statSync(filePath);
+      } catch {
+        return null;
+      }
+    }
+
+    function readSafe(filePath) {
+      try {
+        if (!fs.existsSync(filePath)) return "";
+        return fs.readFileSync(filePath, "utf8");
+      } catch {
+        return "";
+      }
+    }
+
+    /* =========================
+       BACKEND STATUS EVENT
+    ========================= */
+    addEvent(
+      "Backend",
+      "success",
+      "CloudOps backend API is running",
+      "PM2 / Node.js",
+      new Date().toISOString(),
+      {
+        port: PORT,
+        status: "online"
+      }
+    );
+
+    /* =========================
+       SERVER HEALTH EVENT
+    ========================= */
+    try {
+      const health = getServerHealth();
+
+      let severity = "success";
+
+      if (Number(health.diskUsage) >= 80 || Number(health.memoryUsage) >= 90) {
+        severity = "critical";
+      } else if (Number(health.diskUsage) >= 60 || Number(health.memoryUsage) >= 75) {
+        severity = "warning";
+      }
+
+      addEvent(
+        "Server Health",
+        severity,
+        `Server is ${health.status}. CPU: ${health.cpuUsage}%, Memory: ${health.memoryUsage}%, Disk: ${health.diskUsage}%`,
+        "Server Monitor",
+        health.checkedAt || new Date().toISOString(),
+        health
+      );
+    } catch {
+      addEvent(
+        "Server Health",
+        "warning",
+        "Unable to collect server health snapshot",
+        "Server Monitor",
+        new Date().toISOString()
+      );
+    }
+
+    /* =========================
+       DOCKER EVENTS
+    ========================= */
+    try {
+      const containers = getDockerContainers();
+
+      if (containers.length === 0) {
+        addEvent(
+          "Docker",
+          "warning",
+          "No Docker containers found",
+          "Docker",
+          new Date().toISOString()
+        );
+      } else {
+        containers.forEach((container) => {
+          const isRunning = String(container.status || "").toLowerCase().includes("up");
+
+          addEvent(
+            "Docker",
+            isRunning ? "success" : "warning",
+            `Container ${container.name} is ${container.status}`,
+            "Docker",
+            new Date().toISOString(),
+            container
+          );
+        });
+      }
+    } catch {
+      addEvent(
+        "Docker",
+        "warning",
+        "Unable to read Docker container status",
+        "Docker",
+        new Date().toISOString()
+      );
+    }
+
+    /* =========================
+       TRIVY SCAN EVENT
+    ========================= */
+    try {
+      const trivySummary = getTrivySummary();
+      const frontend = trivySummary.frontend || {};
+      const backend = trivySummary.backend || {};
+
+      const totalCritical = Number(frontend.critical || 0) + Number(backend.critical || 0);
+      const totalHigh = Number(frontend.high || 0) + Number(backend.high || 0);
+      const totalVulnerabilities = Number(frontend.total || 0) + Number(backend.total || 0);
+
+      let severity = "success";
+
+      if (totalCritical > 0) {
+        severity = "critical";
+      } else if (totalHigh > 0) {
+        severity = "warning";
+      }
+
+      addEvent(
+        "Trivy Security",
+        severity,
+        `Trivy scan detected ${totalVulnerabilities} vulnerabilities. Critical: ${totalCritical}, High: ${totalHigh}`,
+        "Trivy",
+        trivySummary.scannedAt || new Date().toISOString(),
+        trivySummary
+      );
+    } catch {
+      addEvent(
+        "Trivy Security",
+        "warning",
+        "Unable to read Trivy scan summary",
+        "Trivy",
+        new Date().toISOString()
+      );
+    }
+
+    /* =========================
+       PDF REPORT EVENTS
+    ========================= */
+    try {
+      const reportFiles = fs
+        .readdirSync(REPORT_DIR)
+        .filter((file) => file.endsWith(".pdf"))
+        .map((file) => {
+          const filePath = path.join(REPORT_DIR, file);
+          const stats = safeStat(filePath);
+
+          return {
+            file,
+            filePath,
+            stats
+          };
+        })
+        .filter((item) => item.stats)
+        .sort((a, b) => b.stats.mtimeMs - a.stats.mtimeMs)
+        .slice(0, 10);
+
+      reportFiles.forEach((report) => {
+        addEvent(
+          "PDF Report",
+          "info",
+          `PDF report generated: ${report.file}`,
+          "Report Engine",
+          report.stats.mtime.toISOString(),
+          {
+            fileName: report.file,
+            sizeKB: Number((report.stats.size / 1024).toFixed(2)),
+            emailSender: process.env.EMAIL_USER || "Not configured",
+            emailRecipient: process.env.EMAIL_TO || "Not configured"
+          }
+        );
+      });
+    } catch {
+      addEvent(
+        "PDF Report",
+        "warning",
+        "Unable to read PDF report history",
+        "Report Engine",
+        new Date().toISOString()
+      );
+    }
+
+    /* =========================
+       ALERT LOG EVENTS
+    ========================= */
+    try {
+      const alertLogPath = path.join(REPORT_DIR, "alert.log");
+      const alertContent = readSafe(alertLogPath);
+
+      alertContent
+        .split("\n")
+        .filter((line) => line.trim() !== "")
+        .slice(-30)
+        .forEach((line) => {
+          let severity = "info";
+
+          if (line.toLowerCase().includes("critical") || line.toLowerCase().includes("failed") || line.toLowerCase().includes("down")) {
+            severity = "critical";
+          } else if (line.toLowerCase().includes("warning") || line.toLowerCase().includes("high")) {
+            severity = "warning";
+          } else if (line.toLowerCase().includes("resolved") || line.toLowerCase().includes("healthy")) {
+            severity = "success";
+          }
+
+          addEvent(
+            "Alert",
+            severity,
+            line.slice(0, 250),
+            "Alert Engine",
+            new Date().toISOString()
+          );
+        });
+    } catch {
+      addEvent(
+        "Alert",
+        "warning",
+        "Unable to read alert log",
+        "Alert Engine",
+        new Date().toISOString()
+      );
+    }
+
+    /* =========================
+       CLEANUP EVENTS
+    ========================= */
+    try {
+      const cleanupLogPath = path.join(REPORT_DIR, "cleanup.log");
+      const cleanupContent = readSafe(cleanupLogPath);
+
+      cleanupContent
+        .split("\n")
+        .filter((line) => line.trim() !== "")
+        .slice(-20)
+        .forEach((line) => {
+          addEvent(
+            "Cleanup",
+            "info",
+            line.slice(0, 250),
+            "Cleanup Module",
+            new Date().toISOString()
+          );
+        });
+    } catch {
+      // cleanup log is optional
+    }
+
+    const sortedEvents = events
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 100);
+
+    const summary = {
+      totalEvents: sortedEvents.length,
+      critical: sortedEvents.filter((event) => event.severity === "critical").length,
+      warning: sortedEvents.filter((event) => event.severity === "warning").length,
+      success: sortedEvents.filter((event) => event.severity === "success").length,
+      info: sortedEvents.filter((event) => event.severity === "info").length
+    };
+
+    res.json({
+      summary,
+      events: sortedEvents,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to generate activity log",
+      error: error.message
+    });
+  }
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`CloudOps Backend Running On Port ${PORT}`);
 });
