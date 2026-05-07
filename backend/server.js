@@ -1127,6 +1127,109 @@ app.get("/api/github-actions", async (req, res) => {
 });
 
 
+
+app.get("/api/nginx-logs", (req, res) => {
+  try {
+    const accessLogPath = "/var/log/nginx/access.log";
+    const errorLogPath = "/var/log/nginx/error.log";
+
+    function readLastLines(filePath, maxLines = 500) {
+      try {
+        if (!fs.existsSync(filePath)) {
+          return [];
+        }
+
+        const content = fs.readFileSync(filePath, "utf8");
+
+        return content
+          .split("\n")
+          .filter((line) => line.trim() !== "")
+          .slice(-maxLines);
+      } catch {
+        return [];
+      }
+    }
+
+    const accessLines = readLastLines(accessLogPath, 700);
+    const errorLines = readLastLines(errorLogPath, 100);
+
+    const requests = accessLines.map((line) => {
+      const ip = line.split(" ")[0] || "N/A";
+
+      const statusMatch = line.match(/" (\d{3}) /);
+      const status = statusMatch ? statusMatch[1] : "N/A";
+
+      const requestMatch = line.match(/"([A-Z]+) ([^ ]+) HTTP/);
+      const method = requestMatch ? requestMatch[1] : "N/A";
+      const route = requestMatch ? requestMatch[2] : "N/A";
+
+      const timeMatch = line.match(/\[(.*?)\]/);
+      const time = timeMatch ? timeMatch[1] : "N/A";
+
+      return {
+        ip,
+        method,
+        route,
+        status,
+        time,
+        raw: line
+      };
+    });
+
+    const totalRequests = requests.length;
+    const successRequests = requests.filter((r) => r.status.startsWith("2")).length;
+    const redirectRequests = requests.filter((r) => r.status.startsWith("3")).length;
+    const clientErrors = requests.filter((r) => r.status.startsWith("4")).length;
+    const serverErrors = requests.filter((r) => r.status.startsWith("5")).length;
+
+    const topIpsMap = {};
+    const topRoutesMap = {};
+    const statusMap = {};
+
+    requests.forEach((request) => {
+      topIpsMap[request.ip] = (topIpsMap[request.ip] || 0) + 1;
+      topRoutesMap[request.route] = (topRoutesMap[request.route] || 0) + 1;
+      statusMap[request.status] = (statusMap[request.status] || 0) + 1;
+    });
+
+    const topIps = Object.entries(topIpsMap)
+      .map(([ip, count]) => ({ ip, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const topRoutes = Object.entries(topRoutesMap)
+      .map(([route, count]) => ({ route, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const statusCodes = Object.entries(statusMap)
+      .map(([status, count]) => ({ status, count }))
+      .sort((a, b) => b.count - a.count);
+
+    res.json({
+      summary: {
+        totalRequests,
+        successRequests,
+        redirectRequests,
+        clientErrors,
+        serverErrors,
+        errorLogCount: errorLines.length
+      },
+      topIps,
+      topRoutes,
+      statusCodes,
+      latestRequests: requests.reverse().slice(0, 50),
+      latestErrors: errorLines.reverse().slice(0, 30),
+      checkedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to read Nginx logs",
+      error: error.message
+    });
+  }
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`CloudOps Backend Running On Port ${PORT}`);
 });
