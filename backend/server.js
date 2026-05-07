@@ -1230,6 +1230,141 @@ app.get("/api/nginx-logs", (req, res) => {
   }
 });
 
+
+app.get("/api/cleanup-summary", (req, res) => {
+  try {
+    const diskUsage = getDiskUsage();
+
+    const largestFoldersRaw = run(
+      "du -h /home/ubuntu/CloudOps-Sentinel /var/log /var/www 2>/dev/null | sort -hr | head -10"
+    );
+
+    const dockerDiskRaw = run("docker system df 2>/dev/null");
+
+    const oldReportsRaw = run(
+      "find /home/ubuntu/CloudOps-Sentinel/backend/reports -name '*.pdf' -mtime +7 2>/dev/null | wc -l"
+    );
+
+    const oldLogsRaw = run(
+      "find /home/ubuntu/CloudOps-Sentinel/backend/reports -name '*.log' -mtime +7 2>/dev/null | wc -l"
+    );
+
+    const stoppedContainersRaw = run(
+      "docker ps -a --filter status=exited --format '{{.Names}}' 2>/dev/null | wc -l"
+    );
+
+    const danglingImagesRaw = run(
+      "docker images -f dangling=true -q 2>/dev/null | wc -l"
+    );
+
+    res.json({
+      diskUsage,
+      largestFolders: largestFoldersRaw
+        ? largestFoldersRaw.split("\n").map((line) => {
+            const parts = line.trim().split(/\s+/);
+            return {
+              size: parts[0],
+              path: parts.slice(1).join(" ")
+            };
+          })
+        : [],
+      dockerDiskUsage: dockerDiskRaw || "Docker data not available",
+      cleanupCandidates: {
+        oldPdfReports: Number(oldReportsRaw || 0),
+        oldLogFiles: Number(oldLogsRaw || 0),
+        stoppedContainers: Number(stoppedContainersRaw || 0),
+        danglingImages: Number(danglingImagesRaw || 0)
+      },
+      checkedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to generate cleanup summary",
+      error: error.message
+    });
+  }
+});
+
+app.get("/api/run-cleanup", (req, res) => {
+  try {
+    const type = String(req.query.type || "preview");
+
+    const allowedTypes = [
+      "old-reports",
+      "old-logs",
+      "stopped-containers",
+      "dangling-images",
+      "npm-cache",
+      "safe-all"
+    ];
+
+    if (!allowedTypes.includes(type)) {
+      return res.status(400).json({
+        message: "Invalid cleanup type",
+        allowedTypes
+      });
+    }
+
+    const actions = [];
+
+    if (type === "old-reports" || type === "safe-all") {
+      const result = run(
+        "find /home/ubuntu/CloudOps-Sentinel/backend/reports -name '*.pdf' -mtime +7 -delete -print 2>/dev/null"
+      );
+      actions.push({
+        action: "Deleted PDF reports older than 7 days",
+        result: result || "No old PDF reports found"
+      });
+    }
+
+    if (type === "old-logs" || type === "safe-all") {
+      const result = run(
+        "find /home/ubuntu/CloudOps-Sentinel/backend/reports -name '*.log' -mtime +7 -delete -print 2>/dev/null"
+      );
+      actions.push({
+        action: "Deleted log files older than 7 days",
+        result: result || "No old log files found"
+      });
+    }
+
+    if (type === "stopped-containers" || type === "safe-all") {
+      const result = run("docker container prune -f 2>/dev/null");
+      actions.push({
+        action: "Removed stopped Docker containers",
+        result: result || "No stopped containers removed"
+      });
+    }
+
+    if (type === "dangling-images" || type === "safe-all") {
+      const result = run("docker image prune -f 2>/dev/null");
+      actions.push({
+        action: "Removed dangling Docker images",
+        result: result || "No dangling images removed"
+      });
+    }
+
+    if (type === "npm-cache") {
+      const result = run("npm cache clean --force 2>/dev/null");
+      actions.push({
+        action: "Cleaned npm cache",
+        result: result || "NPM cache cleanup completed"
+      });
+    }
+
+    res.json({
+      message: "Cleanup completed",
+      type,
+      actions,
+      cleanedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Cleanup failed",
+      error: error.message
+    });
+  }
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`CloudOps Backend Running On Port ${PORT}`);
 });

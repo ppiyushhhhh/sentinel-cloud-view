@@ -1,3 +1,4 @@
+import CleanupPage from "./pages/CleanupPage";
 import NginxLogsPage from "./pages/NginxLogsPage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/alerts" element={<AlertsPage />} />
             <Route path="/nginx-logs" element={<NginxLogsPage />} />
+          <Route path="/cleanup" element={<CleanupPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
