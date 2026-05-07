@@ -880,18 +880,43 @@ app.get("/api/generate-and-email-report", async (req, res) => {
   }
 });
 
-app.get("/api/reports", (req, res) => {
-  const files = fs
-    .readdirSync(REPORT_DIR)
-    .filter((file) => file.endsWith(".pdf"))
-    .map((file) => ({
-      fileName: file,
-      downloadUrl: `/api/reports/${file}`,
-      fullDownloadUrl: `/api/reports/${file}`
-    }));
 
-  res.json(files);
+app.get("/api/reports", (req, res) => {
+  try {
+    const files = fs
+      .readdirSync(REPORT_DIR)
+      .filter((file) => file.endsWith(".pdf"))
+      .map((file) => {
+        const filePath = path.join(REPORT_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        return {
+          fileName: file,
+          downloadUrl: `/api/reports/${file}`,
+          fullDownloadUrl: `/api/reports/${file}`,
+          generatedAt: stats.birthtime,
+          generatedAtLocal: stats.birthtime.toLocaleString(),
+          lastModifiedAt: stats.mtime,
+          sizeKB: Number((stats.size / 1024).toFixed(2)),
+          emailSender: process.env.EMAIL_USER || "Not configured",
+          emailRecipient: process.env.EMAIL_TO || "Not configured",
+          deliveryStatus: "Available report file",
+          reportType: file.includes("cloudops-report")
+            ? "CloudOps Infrastructure Report"
+            : "PDF Report"
+        };
+      })
+      .sort((a, b) => new Date(b.generatedAt) - new Date(a.generatedAt));
+
+    res.json(files);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to list reports",
+      error: error.message
+    });
+  }
 });
+
 
 app.get("/api/reports/:fileName", (req, res) => {
   const filePath = path.join(REPORT_DIR, req.params.fileName);
