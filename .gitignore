@@ -1,24 +1,36 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
+!.vscode/extensions.json
+# Build output
+# Editor directories and files
+# Environment and secrets
+# Logs
+# Runtime logs and reports
+*.local
+*.log
+*.njsproj
+*.ntvs*
+*.pem
+*.ppk
+*.sln
+*.suo
+*.sw?
+.DS_Store
+.env
+.env.*
+.idea
+.vscode/*
+backend/.env
+backend/.env.*
+backend/node_modules
+backend/reports/*.json
+backend/reports/*.log
+backend/reports/*.pdf
 dist
 dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+lerna-debug.log*
+logs
+node_modules
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
