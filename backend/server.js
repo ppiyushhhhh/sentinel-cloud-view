@@ -227,13 +227,25 @@ function drawTable(doc, title, headers, rows, startY) {
   return y + 18;
 }
 
-function generatePdfReport() {
+function generatePdfReport(options = {}) {
   const serverHealth = getServerHealth();
   const dockerContainers = getDockerContainers();
   const trivySummary = getTrivySummary();
   const healthScore = getHealthScore(serverHealth, trivySummary);
 
   const date = new Date();
+
+  const reportMeta = {
+    generatedAt: date.toLocaleString(),
+    deliveryMode: options.deliveryMode || "Manual PDF Generation",
+    emailStatus: options.emailStatus || "Generated only - not emailed",
+    emailSender: process.env.EMAIL_USER || "Not configured",
+    emailRecipient: process.env.EMAIL_TO || "Not configured",
+    triggeredBy: options.triggeredBy || "Dashboard / API",
+    serverHostname: serverHealth.hostname || "N/A",
+    publicIp: serverHealth.publicIp || "N/A"
+  };
+
   const fileName = `cloudops-report-${date.toISOString().split("T")[0]}-${Date.now()}.pdf`;
   const filePath = path.join(REPORT_DIR, fileName);
 
@@ -359,7 +371,24 @@ function generatePdfReport() {
 
   y = drawTable(
     doc,
-    "1. Server Overview",
+    "1. Report Delivery Details",
+    ["Field", "Value"],
+    [
+      ["Report Generated At", reportMeta.generatedAt],
+      ["Report Type", reportMeta.deliveryMode],
+      ["Email Status", reportMeta.emailStatus],
+      ["Email Sender", reportMeta.emailSender],
+      ["Email Recipient", reportMeta.emailRecipient],
+      ["Triggered By", reportMeta.triggeredBy],
+      ["Server Hostname", reportMeta.serverHostname],
+      ["Public IP", reportMeta.publicIp]
+    ],
+    y
+  );
+
+  y = drawTable(
+    doc,
+    "2. Server Overview",
     ["Metric", "Value"],
     [
       ["Server Status", serverHealth.status],
@@ -380,7 +409,7 @@ function generatePdfReport() {
 
   y = drawTable(
     doc,
-    "2. Docker Container Status",
+    "3. Docker Container Status",
     ["Container", "Image", "Status", "Ports"],
     dockerContainers.length
       ? dockerContainers.map((c) => [c.name, c.image, c.status, c.ports || "N/A"])
@@ -390,7 +419,7 @@ function generatePdfReport() {
 
   y = drawTable(
     doc,
-    "3. Trivy Security Summary",
+    "4. Trivy Security Summary",
     ["Image", "Critical", "High", "Medium", "Low", "Total"],
     [
       [
@@ -422,7 +451,7 @@ function generatePdfReport() {
     .font("Helvetica-Bold")
     .fontSize(14)
     .fillColor("#111827")
-    .text("4. Recommendations", margin, y);
+    .text("5. Recommendations", margin, y);
 
   y += 24;
 
@@ -510,7 +539,8 @@ function generatePdfReport() {
     fileName,
     filePath,
     generatedAt: date.toISOString(),
-    healthScore
+    healthScore,
+    delivery: reportMeta
   };
 }
 
@@ -809,7 +839,11 @@ app.get("/api/trivy-vulnerabilities", (req, res) => {
 });
 
 app.get("/api/generate-report", (req, res) => {
-  const report = generatePdfReport();
+  const report = generatePdfReport({
+    deliveryMode: "Manual PDF Generation",
+    emailStatus: "Generated only - not emailed",
+    triggeredBy: "/api/generate-report"
+  });
 
   res.json({
     message: "PDF report generated successfully",
@@ -819,7 +853,11 @@ app.get("/api/generate-report", (req, res) => {
 
 app.get("/api/generate-and-email-report", async (req, res) => {
   try {
-    const report = generatePdfReport();
+    const report = generatePdfReport({
+      deliveryMode: "Email PDF Report",
+      emailStatus: "Queued for email delivery",
+      triggeredBy: "/api/generate-and-email-report"
+    });
 
     setTimeout(async () => {
       try {
