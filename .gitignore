@@ -7,12 +7,16 @@
 # Logs
 # Runtime logs and reports
 # Runtime/cache files
+# SQLite database runtime files
 *.backup
 *.backup-*
 *.backup-login-*
 *.backup-pagination-*
 *.before-*
 *.broken-*
+*.db
+*.db-shm
+*.db-wal
 *.local
 *.log
 *.njsproj
@@ -30,6 +34,7 @@
 backend.backup/
 backend/.env
 backend/.env.*
+backend/data/
 backend/node_modules
 backend/node_modules/
 backend/reports/
