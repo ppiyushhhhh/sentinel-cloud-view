@@ -11,21 +11,20 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
-    const success = login(username.trim(), password);
+    try {
+      await login(username.trim(), password);
 
-    if (!success) {
-      setError("Invalid username or password.");
-      return;
+      const redirectTo =
+        (location.state as { from?: string } | null)?.from || "/";
+
+      navigate(redirectTo, { replace: true });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Invalid username or password.");
     }
-
-    const redirectTo =
-      (location.state as { from?: string } | null)?.from || "/";
-
-    navigate(redirectTo, { replace: true });
   }
 
   return (
@@ -122,9 +121,8 @@ const LoginPage = () => {
             </form>
 
             <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 text-sm text-zinc-400">
-              <p className="font-semibold text-zinc-300">Default login</p>
-              <p className="mt-1">Username: admin</p>
-              <p>Password: CloudOps@123</p>
+              <p className="font-semibold text-zinc-300">Protected Access</p>
+              <p className="mt-1">Login is verified by the backend JWT authentication API.</p>
             </div>
           </div>
 
