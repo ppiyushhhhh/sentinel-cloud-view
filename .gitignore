@@ -3,8 +3,16 @@
 # Build output
 # Editor directories and files
 # Environment and secrets
+# Local backup files
 # Logs
 # Runtime logs and reports
+# Runtime/cache files
+*.backup
+*.backup-*
+*.backup-login-*
+*.backup-pagination-*
+*.before-*
+*.broken-*
 *.local
 *.log
 *.njsproj
@@ -19,17 +27,25 @@
 .env.*
 .idea
 .vscode/*
+backend.backup/
 backend/.env
 backend/.env.*
 backend/node_modules
+backend/node_modules/
+backend/reports/
 backend/reports/*.json
 backend/reports/*.log
 backend/reports/*.pdf
+backend/trivy-cache/
 dist
 dist-ssr
+dist/
+frontend-audit.json
 lerna-debug.log*
+live-api-frontend-changes.patch
 logs
 node_modules
+node_modules/
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
