@@ -5,6 +5,7 @@ const rateLimit = require("express-rate-limit");
 require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 
 const express = require("express");
+const { syncLatestTrivyScanToDatabase, getTrivyScanHistory, getTrivyScanSummary } = require("./trivy-db.cjs");
 const { syncReportsToDatabase, getReportHistory, getReportHistorySummary } = require("./report-db.cjs");
 const { db, DB_PATH, getSetting, setSetting } = require("./db.cjs");
 const cors = require("cors");
@@ -996,6 +997,59 @@ app.get("/api/db/reports/history", (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch PDF report history from SQLite",
+      error: error.message
+    });
+  }
+});
+
+
+
+/* =========================
+   TRIVY SCAN HISTORY DATABASE ROUTES
+========================= */
+
+app.post("/api/db/trivy/sync", (req, res) => {
+  try {
+    const result = syncLatestTrivyScanToDatabase();
+
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+
+    return res.json({
+      ...result,
+      summary: getTrivyScanSummary(),
+      syncedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to sync Trivy scan result to SQLite",
+      error: error.message
+    });
+  }
+});
+
+app.get("/api/db/trivy/history", (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit || 50), 500);
+    const offset = Math.max(Number(req.query.offset || 0), 0);
+
+    const history = getTrivyScanHistory({ limit, offset });
+    const summary = getTrivyScanSummary();
+
+    return res.json({
+      success: true,
+      summary,
+      history,
+      limit,
+      offset,
+      fetchedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch Trivy scan history from SQLite",
       error: error.message
     });
   }
