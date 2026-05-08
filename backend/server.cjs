@@ -730,7 +730,7 @@ function collectMetricSnapshot() {
    SQLITE DATABASE ROUTES
 ========================= */
 
-app.get("/api/db/status", (req, res) => {
+app.get("/api/db/status", authMiddleware, (req, res) => {
   try {
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
@@ -765,7 +765,7 @@ app.get("/api/db/status", (req, res) => {
   }
 });
 
-app.get("/api/settings", (req, res) => {
+app.get("/api/settings", authMiddleware, (req, res) => {
   try {
     const rows = db
       .prepare("SELECT setting_key, setting_value, updated_at FROM app_settings ORDER BY setting_key")
@@ -792,7 +792,7 @@ app.get("/api/settings", (req, res) => {
   }
 });
 
-app.post("/api/settings", (req, res) => {
+app.post("/api/settings", authMiddleware, (req, res) => {
   try {
     const settings = req.body || {};
 
@@ -815,7 +815,7 @@ app.post("/api/settings", (req, res) => {
   }
 });
 
-app.get("/api/incidents", (req, res) => {
+app.get("/api/incidents", authMiddleware, (req, res) => {
   try {
     const status = req.query.status;
     const severity = req.query.severity;
@@ -852,7 +852,7 @@ app.get("/api/incidents", (req, res) => {
   }
 });
 
-app.post("/api/incidents", (req, res) => {
+app.post("/api/incidents", authMiddleware, (req, res) => {
   try {
     const {
       title,
@@ -907,7 +907,7 @@ app.post("/api/incidents", (req, res) => {
   }
 });
 
-app.patch("/api/incidents/:id/resolve", (req, res) => {
+app.patch("/api/incidents/:id/resolve", authMiddleware, (req, res) => {
   try {
     const { rootCause = "", resolution = "" } = req.body || {};
     const id = Number(req.params.id);
@@ -980,7 +980,7 @@ app.post("/api/db/reports/sync", (req, res) => {
   }
 });
 
-app.get("/api/db/reports/history", (req, res) => {
+app.get("/api/db/reports/history", authMiddleware, (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit || 100), 500);
     const offset = Math.max(Number(req.query.offset || 0), 0);
@@ -1033,7 +1033,7 @@ app.post("/api/db/trivy/sync", (req, res) => {
   }
 });
 
-app.get("/api/db/trivy/history", (req, res) => {
+app.get("/api/db/trivy/history", authMiddleware, (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit || 50), 500);
     const offset = Math.max(Number(req.query.offset || 0), 0);
@@ -1088,7 +1088,7 @@ app.post("/api/db/pipeline/sync", async (req, res) => {
   }
 });
 
-app.get("/api/db/pipeline/history", (req, res) => {
+app.get("/api/db/pipeline/history", authMiddleware, (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit || 100), 500);
     const offset = Math.max(Number(req.query.offset || 0), 0);
@@ -1149,7 +1149,7 @@ app.post("/api/db/alerts", (req, res) => {
   }
 });
 
-app.get("/api/db/alerts/history", (req, res) => {
+app.get("/api/db/alerts/history", authMiddleware, (req, res) => {
   try {
     const limit = Math.min(Number(req.query.limit || 100), 500);
     const offset = Math.max(Number(req.query.offset || 0), 0);

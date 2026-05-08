@@ -1,3 +1,4 @@
+import { authFetch } from "@/lib/auth-fetch";
 import { useEffect, useState } from "react";
 
 type AppSettings = {
@@ -32,7 +33,7 @@ const SettingsPage = () => {
     try {
       setLoading(true);
 
-      const response = await fetch("/api/settings");
+      const response = await authFetch("/api/settings");
       const data = await response.json();
 
       if (!response.ok || !data.success) {
@@ -69,7 +70,7 @@ const SettingsPage = () => {
     try {
       setSaving(true);
 
-      const response = await fetch("/api/settings", {
+      const response = await authFetch("/api/settings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

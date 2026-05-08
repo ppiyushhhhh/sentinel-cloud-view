@@ -1,3 +1,4 @@
+import { authFetch } from "@/lib/auth-fetch";
 import { useEffect, useMemo, useState } from "react";
 
 type Incident = {
@@ -35,7 +36,7 @@ const IncidentsPage = () => {
     try {
       setLoading(true);
 
-      const response = await fetch("/api/incidents");
+      const response = await authFetch("/api/incidents");
       const data = await response.json();
 
       setIncidents(Array.isArray(data.incidents) ? data.incidents : []);
@@ -109,7 +110,7 @@ const IncidentsPage = () => {
     try {
       setCreating(true);
 
-      const response = await fetch("/api/incidents", {
+      const response = await authFetch("/api/incidents", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -149,7 +150,7 @@ const IncidentsPage = () => {
     if (resolution === null) return;
 
     try {
-      const response = await fetch(`/api/incidents/${incident.id}/resolve`, {
+      const response = await authFetch(`/api/incidents/${incident.id}/resolve`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json"

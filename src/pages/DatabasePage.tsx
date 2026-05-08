@@ -1,3 +1,4 @@
+import { authFetch } from "@/lib/auth-fetch";
 import { useEffect, useState } from "react";
 
 type DbStatus = {
@@ -16,7 +17,7 @@ const DatabasePage = () => {
     try {
       setLoading(true);
 
-      const response = await fetch("/api/db/status");
+      const response = await authFetch("/api/db/status");
       const result = await response.json();
 
       if (!response.ok || !result.success) {
