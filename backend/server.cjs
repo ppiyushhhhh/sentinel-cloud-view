@@ -5,6 +5,8 @@ const rateLimit = require("express-rate-limit");
 require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 
 const express = require("express");
+const { createAlert, getAlerts, getAlertSummary, resolveAlert } = require("./alert-db.cjs");
+const { syncGitHubActionsRunsToDatabase, getPipelineHistory, getPipelineSummary } = require("./pipeline-db.cjs");
 const { syncLatestTrivyScanToDatabase, getTrivyScanHistory, getTrivyScanSummary } = require("./trivy-db.cjs");
 const { syncReportsToDatabase, getReportHistory, getReportHistorySummary } = require("./report-db.cjs");
 const { db, DB_PATH, getSetting, setSetting } = require("./db.cjs");
@@ -1056,6 +1058,162 @@ app.get("/api/db/trivy/history", (req, res) => {
 });
 
 
+
+/* =========================
+   PIPELINE HISTORY DATABASE ROUTES
+========================= */
+
+app.post("/api/db/pipeline/sync", async (req, res) => {
+  try {
+    const perPage = Math.min(Number(req.query.perPage || 100), 100);
+
+    const syncResult = await syncGitHubActionsRunsToDatabase({ perPage });
+    const summary = getPipelineSummary();
+
+    return res.json({
+      ...syncResult,
+      summary
+    });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      success: false,
+      message: "Failed to sync GitHub Actions runs to SQLite",
+      error: error.message,
+      details: error.details,
+      rateLimitRemaining: error.rateLimitRemaining,
+      rateLimitReset: error.rateLimitReset,
+      failedAt: new Date().toISOString()
+    });
+  }
+});
+
+app.get("/api/db/pipeline/history", (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit || 100), 500);
+    const offset = Math.max(Number(req.query.offset || 0), 0);
+    const status = req.query.status || "ALL";
+    const conclusion = req.query.conclusion || "ALL";
+
+    const history = getPipelineHistory({
+      limit,
+      offset,
+      status,
+      conclusion
+    });
+
+    const summary = getPipelineSummary();
+
+    return res.json({
+      success: true,
+      summary,
+      history,
+      limit,
+      offset,
+      filters: {
+        status,
+        conclusion
+      },
+      fetchedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch pipeline history from SQLite",
+      error: error.message
+    });
+  }
+});
+
+
+
+/* =========================
+   ALERT HISTORY DATABASE ROUTES
+========================= */
+
+app.post("/api/db/alerts", (req, res) => {
+  try {
+    const alert = createAlert(req.body || {});
+
+    return res.status(201).json({
+      success: true,
+      message: "Alert saved to SQLite successfully",
+      alert
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "Failed to save alert to SQLite",
+      error: error.message
+    });
+  }
+});
+
+app.get("/api/db/alerts/history", (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit || 100), 500);
+    const offset = Math.max(Number(req.query.offset || 0), 0);
+    const status = req.query.status || "ALL";
+    const severity = req.query.severity || "ALL";
+    const alertType = req.query.alertType || "ALL";
+
+    const alerts = getAlerts({
+      limit,
+      offset,
+      status,
+      severity,
+      alertType
+    });
+
+    const summary = getAlertSummary();
+
+    return res.json({
+      success: true,
+      summary,
+      alerts,
+      limit,
+      offset,
+      filters: {
+        status,
+        severity,
+        alertType
+      },
+      fetchedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch alert history from SQLite",
+      error: error.message
+    });
+  }
+});
+
+app.patch("/api/db/alerts/:id/resolve", (req, res) => {
+  try {
+    const alert = resolveAlert(req.params.id);
+
+    if (!alert) {
+      return res.status(404).json({
+        success: false,
+        message: "Alert not found"
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Alert resolved successfully",
+      alert
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to resolve alert",
+      error: error.message
+    });
+  }
+});
+
+
 /* =========================
    ROUTES
 ========================= */
@@ -1272,8 +1430,37 @@ app.get("/api/reports/:fileName", (req, res) => {
 });
 
 
+
+function saveAlertHistorySafe(payload) {
+  try {
+    if (typeof createAlert === "function") {
+      return createAlert(payload);
+    }
+  } catch (error) {
+    console.error("Failed to save alert history:", error.message);
+  }
+
+  return null;
+}
+
 app.get("/api/send-alert", async (req, res) => {
   try {
+
+    saveAlertHistorySafe({
+      alertType: "email_alert",
+      severity: "high",
+      title: "CloudOps Sentinel alert triggered",
+      message: "Alert endpoint was triggered from backend API.",
+      source: "api/send-alert",
+      metadata: {
+        path: req.path,
+        method: req.method,
+        query: req.query || {},
+        body: req.body || {},
+        triggeredAt: new Date().toISOString()
+      }
+    });
+
     const alertType = String(req.query.type || "general");
     const message = String(req.query.message || "CloudOps Sentinel alert triggered.");
     const force = String(req.query.force || "false") === "true";
