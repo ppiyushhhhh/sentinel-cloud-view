@@ -5,6 +5,7 @@ const rateLimit = require("express-rate-limit");
 require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 
 const express = require("express");
+const { ensureAdminUser, loginUser, authMiddleware } = require("./auth-db.cjs");
 const { createAlert, getAlerts, getAlertSummary, resolveAlert } = require("./alert-db.cjs");
 const { syncGitHubActionsRunsToDatabase, getPipelineHistory, getPipelineSummary } = require("./pipeline-db.cjs");
 const { syncLatestTrivyScanToDatabase, getTrivyScanHistory, getTrivyScanSummary } = require("./trivy-db.cjs");
@@ -1211,6 +1212,61 @@ app.patch("/api/db/alerts/:id/resolve", (req, res) => {
       error: error.message
     });
   }
+});
+
+
+
+/* =========================
+   AUTH ROUTES
+========================= */
+
+try {
+  ensureAdminUser();
+  console.log("Auth admin user initialized.");
+} catch (error) {
+  console.error("Failed to initialize auth admin user:", error.message);
+}
+
+app.post("/api/auth/login", (req, res) => {
+  try {
+    const { username, password } = req.body || {};
+
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Username and password are required"
+      });
+    }
+
+    const result = loginUser(String(username).trim(), String(password));
+
+    if (!result) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid username or password"
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Login successful",
+      token: result.token,
+      user: result.user
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Login failed",
+      error: error.message
+    });
+  }
+});
+
+app.get("/api/auth/me", authMiddleware, (req, res) => {
+  return res.json({
+    success: true,
+    user: req.user
+  });
 });
 
 
