@@ -15,6 +15,7 @@ import TrivyPage from "@/pages/TrivyPage";
 import ReportsPage from "@/pages/ReportsPage";
 import AlertsPage from "@/pages/AlertsPage";
 import SettingsPage from "@/pages/SettingsPage";
+import IncidentsPage from "@/pages/IncidentsPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/activity" element={<ActivityLogPage />} />
             <Route path="/alerts" element={<AlertsPage />} />
+            <Route path="/incidents" element={<IncidentsPage />} />
             <Route path="/nginx-logs" element={<NginxLogsPage />} />
             <Route path="/cleanup" element={<CleanupPage />} />
             <Route path="/settings" element={<SettingsPage />} />
