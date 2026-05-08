@@ -4,10 +4,12 @@
 # Editor directories and files
 # Environment and secrets
 # Local backup files
+# Local database backups
 # Logs
 # Runtime logs and reports
 # Runtime/cache files
 # SQLite database runtime files
+# SQLite runtime database files
 *.backup
 *.backup-*
 *.backup-login-*
@@ -17,6 +19,7 @@
 *.db
 *.db-shm
 *.db-wal
+*.db.gz
 *.local
 *.log
 *.njsproj
@@ -42,6 +45,7 @@ backend/reports/*.json
 backend/reports/*.log
 backend/reports/*.pdf
 backend/trivy-cache/
+cloudops-db-backups/
 dist
 dist-ssr
 dist/
