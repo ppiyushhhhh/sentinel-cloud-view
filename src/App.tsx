@@ -15,9 +15,19 @@ import TrivyPage from "@/pages/TrivyPage";
 import ReportsPage from "@/pages/ReportsPage";
 import AlertsPage from "@/pages/AlertsPage";
 import SettingsPage from "@/pages/SettingsPage";
+import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import LogoutButton from "@/components/LogoutButton";
 
 const queryClient = new QueryClient();
+
+const ProtectedLayout = () => (
+  <ProtectedRoute>
+    <AppLayout />
+    <LogoutButton />
+  </ProtectedRoute>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -26,7 +36,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route element={<AppLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+
+          <Route element={<ProtectedLayout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/server" element={<ServerHealthPage />} />
             <Route path="/docker" element={<DockerPage />} />
@@ -34,11 +46,12 @@ const App = () => (
             <Route path="/trivy" element={<TrivyPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/activity" element={<ActivityLogPage />} />
-          <Route path="/alerts" element={<AlertsPage />} />
+            <Route path="/alerts" element={<AlertsPage />} />
             <Route path="/nginx-logs" element={<NginxLogsPage />} />
-          <Route path="/cleanup" element={<CleanupPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/cleanup" element={<CleanupPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
