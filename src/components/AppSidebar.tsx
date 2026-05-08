@@ -9,7 +9,9 @@ import {
   Bell,
   Settings,
   Activity,
-  Trash2
+  Trash2,
+  Database,
+  AlertTriangle
 } from "lucide-react";
 
 const menuItems = [
@@ -54,6 +56,11 @@ const menuItems = [
     icon: Bell
   },
   {
+    title: "Incidents",
+    url: "/incidents",
+    icon: AlertTriangle
+  },
+  {
     title: "Nginx Logs",
     url: "/nginx-logs",
     icon: Activity
@@ -62,6 +69,11 @@ const menuItems = [
     title: "Server Cleanup",
     url: "/cleanup",
     icon: Trash2
+  },
+  {
+    title: "Database",
+    url: "/database",
+    icon: Database
   },
   {
     title: "Settings",
