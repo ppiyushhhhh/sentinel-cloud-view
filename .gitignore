@@ -1,14 +1,19 @@
 
 !.vscode/extensions.json
 # Build output
+# Build/dependencies
 # Editor directories and files
 # Environment and secrets
+# Environment secrets
 # Local backup files
+# Local backups/temp files
 # Local database backups
 # Logs
 # Runtime logs and reports
+# Runtime reports/logs/cache
 # Runtime/cache files
 # SQLite database runtime files
+# SQLite runtime database
 # SQLite runtime database files
 *.backup
 *.backup-*
