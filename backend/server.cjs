@@ -5,6 +5,7 @@ const rateLimit = require("express-rate-limit");
 require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 
 const express = require("express");
+const { syncReportsToDatabase, getReportHistory, getReportHistorySummary } = require("./report-db.cjs");
 const { db, DB_PATH, getSetting, setSetting } = require("./db.cjs");
 const cors = require("cors");
 const os = require("os");
@@ -942,6 +943,59 @@ app.patch("/api/incidents/:id/resolve", (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to resolve incident",
+      error: error.message
+    });
+  }
+});
+
+
+
+/* =========================
+   REPORT HISTORY DATABASE ROUTES
+========================= */
+
+app.post("/api/db/reports/sync", (req, res) => {
+  try {
+    const syncedReports = syncReportsToDatabase();
+    const summary = getReportHistorySummary();
+
+    res.json({
+      success: true,
+      message: "PDF report metadata synced to SQLite successfully",
+      syncedCount: syncedReports.length,
+      summary,
+      syncedReports,
+      syncedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to sync PDF report metadata to SQLite",
+      error: error.message
+    });
+  }
+});
+
+app.get("/api/db/reports/history", (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit || 100), 500);
+    const offset = Math.max(Number(req.query.offset || 0), 0);
+
+    const reports = getReportHistory({ limit, offset });
+    const summary = getReportHistorySummary();
+
+    res.json({
+      success: true,
+      summary,
+      reports,
+      limit,
+      offset,
+      fetchedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch PDF report history from SQLite",
       error: error.message
     });
   }
