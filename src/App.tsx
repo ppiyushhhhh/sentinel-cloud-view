@@ -18,6 +18,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import DatabasePage from "@/pages/DatabasePage";
 import IncidentsPage from "@/pages/IncidentsPage";
 import LoginPage from "@/pages/LoginPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LogoutButton from "@/components/LogoutButton";
@@ -39,6 +40,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<DashboardPage />} />

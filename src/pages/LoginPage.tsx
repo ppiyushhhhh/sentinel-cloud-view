@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Lock, ShieldCheck, Server, Activity } from "lucide-react";
 import { login } from "@/lib/auth";
 
@@ -95,7 +95,15 @@ const LoginPage = () => {
               </div>
 
               <div>
-                <label className="text-sm text-zinc-300">Password</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-zinc-300">Password</label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs text-green-400 hover:text-green-300 transition"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <input
                   type="password"
                   value={password}
